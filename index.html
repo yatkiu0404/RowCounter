@@ -275,39 +275,36 @@ textarea { resize: vertical; min-height: 80px; }
   .form-row { flex-direction: column; gap: 0; }
 }
 
-/* Date input with formatted locale overlay */
+/* Date input – the wrapper IS the visible field; the real input is hidden */
 .date-wrap {
   position: relative;
   cursor: pointer;
-  display: block;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--date-pad, 10px 14px);
+  padding-right: 40px;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-sizing: border-box;
+  font-size: 16px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .date-wrap input[type="date"] {
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-  pointer-events: none;
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  min-height: 0 !important;
+  pointer-events: none !important;
   -webkit-appearance: none;
   appearance: none;
-  position: relative;
-  z-index: 1;
-  min-height: 44px;
-}
-.date-wrap input[type="date"]::-webkit-date-and-time-value {
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-}
-.date-wrap input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  margin: 0;
-  padding: 0;
-}
-.date-wrap input[type="date"]::-webkit-inner-spin-button,
-.date-wrap input[type="date"]::-webkit-clear-button {
-  display: none;
-  -webkit-appearance: none;
+  overflow: hidden;
 }
 .date-wrap::before {
   content: '\f073';
@@ -320,30 +317,18 @@ textarea { resize: vertical; min-height: 80px; }
   font-size: 15px;
   color: var(--text-muted);
   pointer-events: none;
-  z-index: 4;
 }
 .date-wrap::after {
   content: attr(data-display);
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  padding: var(--date-pad, 10px 14px);
-  padding-right: 40px;
-  pointer-events: none;
-  font-size: 16px;
   color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: inherit;
+  font-size: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  z-index: 3;
-  background: var(--bg-secondary);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
+  pointer-events: none;
+  flex: 1;
+  min-width: 0;
 }
 .date-wrap[data-display=""]::after {
   content: attr(data-placeholder);
@@ -2697,13 +2682,3 @@ function renderYarnStash() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
