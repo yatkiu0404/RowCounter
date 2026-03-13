@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>StitchLog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['Cormorant', 'serif'],
+        body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        hand: ['Kalam', 'cursive'],
+      },
+      colors: {
+        cream: { DEFAULT: '#F9F3EC', dark: '#F0E7DC' },
+        bark: { 50:'#F9F3EC',100:'#F0E7DC',200:'#E0D5C9',300:'#C4B5A5',400:'#9B8E84',500:'#6B5D52',600:'#4A3F36',700:'#2C2218',800:'#252019',900:'#1A1612' },
+        rust: { 300:'#E8A68E',400:'#D88A6C',500:'#C06C4E',600:'#A85D49',700:'#8B4A3A' },
+        sage: { 300:'#A8CCBA',400:'#7FB894',500:'#6B9A7E',600:'#5E8A6F' },
+        gold: { 300:'#E0C88A',400:'#D4B46A',500:'#C9A55A' },
+      }
+    }
+  }
+};
+</script>
+<style>
+:root {
+  --bg-primary: #F9F3EC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F0E7DC;
+  --text-primary: #2C2218;
+  --text-secondary: #6B5D52;
+  --text-muted: #9B8E84;
+  --accent-rust: #C06C4E;
+  --accent-rust-light: #E8A68E;
+  --accent-sage: #6B9A7E;
+  --accent-sage-light: #A8CCBA;
+  --accent-gold: #C9A55A;
+  --border: #E0D5C9;
+  --shadow: rgba(44,34,24,0.06);
+  --counter-bg: #FFF8F3;
+}
+.dark {
+  --bg-primary: #1A1612;
+  --bg-secondary: #252019;
+  --bg-tertiary: #302921;
+  --text-primary: #E8DFD4;
+  --text-secondary: #B0A396;
+  --text-muted: #7A6F65;
+  --accent-rust: #D88A6C;
+  --accent-rust-light: #8B5A44;
+  --accent-sage: #7FB894;
+  --accent-sage-light: #3D5E48;
+  --accent-gold: #D4B46A;
+  --border: #3A3228;
+  --shadow: rgba(0,0,0,0.2);
+  --counter-bg: #2D2622;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  background-image: radial-gradient(circle at 1px 1px, var(--border) 0.5px, transparent 0);
+  background-size: 24px 24px;
+  overflow-x: hidden;
+}
+input, select, textarea {
+  font-size: 16px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 100%;
+  transition: border-color 0.2s;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-rust);
+}
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239B8E84' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+textarea { resize: vertical; min-height: 80px; }
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px var(--shadow);
+  overflow: hidden;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 20px; border-radius: 12px; font-weight: 600;
+  font-size: 14px; cursor: pointer; border: none;
+  transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.btn-primary { background: var(--accent-rust); color: #fff; }
+.btn-primary:hover { background: #A85D49; }
+.btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); }
+.btn-secondary:hover { background: var(--border); }
+.btn-sage { background: var(--accent-sage); color: #fff; }
+.btn-sage:hover { background: #5E8A6F; }
+.btn-danger { background: #D4595C; color: #fff; }
+.btn-danger:hover { background: #B84244; }
+.btn-ghost { background: transparent; color: var(--text-secondary); padding: 8px 12px; }
+.btn-ghost:hover { background: var(--bg-tertiary); }
+.btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px; }
+
+/* Layout */
+#app-header {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+}
+#main-content { padding-bottom: 90px; min-height: calc(100vh - 60px); }
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-around;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 8px 16px max(env(safe-area-inset-bottom, 10px), 10px);
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 11px; font-weight: 500;
+  padding: 6px 20px; transition: color 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border-radius: 10px;
+}
+.nav-item i { font-size: 19px; }
+.nav-item.active { color: var(--accent-rust); background: rgba(192,108,78,0.08); }
+.header-add-btn {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent-rust); color: #fff;
+  border: none; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.header-add-btn:hover { opacity: 0.88; }
+.header-add-btn:active { transform: scale(0.9); }
+
+/* Counter */
+.counter-wrap {
+  background: var(--counter-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 20px 20px;
+  text-align: center;
+  position: relative;
+}
+.counter-number {
+  font-family: 'Cormorant', serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-rust);
+  transition: transform 0.15s;
+  user-select: none;
+}
+.counter-target {
+  font-family: 'Cormorant', serif;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+.counter-btn {
+  width: 68px; height: 68px;
+  border-radius: 50%; border: none;
+  font-size: 1.8rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-weight: 600;
+}
+.counter-btn:active { transform: scale(0.88); }
+.counter-plus { background: var(--accent-sage); color: #fff; box-shadow: 0 3px 12px rgba(107,154,126,0.3); }
+.counter-minus { background: var(--bg-tertiary); color: var(--text-secondary); }
+.counter-undo {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 14px; padding: 6px;
+}
+.counter-undo:hover { color: var(--accent-rust); }
+.progress-bar {
+  height: 8px; border-radius: 4px;
+  background: var(--bg-tertiary);
+  overflow: hidden; margin-top: 12px;
+}
+.progress-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-sage), var(--accent-sage-light));
+  transition: width 0.4s ease;
+}
+
+/* Timer */
+.timer-display {
+  font-family: 'Cormorant', serif;
+  font-size: 2.4rem; font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+.timer-running { color: var(--accent-sage); }
+
+/* Tabs */
+.tab-bar {
+  display: flex; gap: 0; border-bottom: 2px solid var(--border);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab-item {
+  padding: 12px 18px; font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: none; border: none;
+  cursor: pointer; white-space: nowrap;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -2px; transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.tab-item.active { color: var(--accent-rust); border-bottom-color: var(--accent-rust); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeIn 0.2s;
+  padding: 16px;
+}
+@media (min-width: 640px) { .modal-overlay { align-items: center; } }
+.modal-box {
+  background: var(--bg-secondary);
+  border-radius: 20px 20px 12px 12px;
+  width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto;
+  animation: slideUp 0.25s ease;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+@media (min-width: 640px) { .modal-box { border-radius: 20px; } }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 12px; position: sticky; top: 0;
+  background: var(--bg-secondary); border-radius: 20px 20px 0 0; z-index: 1;
+}
+.modal-header h3 {
+  font-family: 'Cormorant', serif;
+  font-size: 1.4rem; font-weight: 700;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg-tertiary); border: none;
+  font-size: 18px; cursor: pointer; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 8px 24px 24px; }
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.form-row { display: flex; gap: 12px; }
+.form-row > * { flex: 1; }
+
+/* Stats */
+.stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+  text-align: center;
+}
+.stat-number {
+  font-family: 'Cormorant', serif;
+  font-size: 2rem; font-weight: 700;
+  color: var(--accent-rust);
+}
+.stat-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-top: 2px;
+}
+
+/* Project card */
+.project-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px;
+  cursor: pointer; transition: all 0.2s;
+}
+.project-card:hover { box-shadow: 0 4px 16px var(--shadow); transform: translateY(-1px); }
+.project-card:active { transform: scale(0.99); }
+
+/* Stitch decoration */
+.stitch-divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 1px;
+  font-weight: 600; margin: 24px 0 16px;
+}
+.stitch-divider::before, .stitch-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 4px, transparent 4px, transparent 8px);
+}
+
+/* PDF canvas */
+.pdf-canvas-wrap {
+  max-width: 100%; overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px; background: #fff;
+}
+.pdf-canvas-wrap canvas { display: block; max-width: 100%; height: auto; }
+
+
+/* Photo grid */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.photo-thumb {
+  aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+  cursor: pointer; position: relative;
+  border: 1px solid var(--border);
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+.photo-thumb:hover img { transform: scale(1.05); }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.anim-pop { animation: pop 0.2s ease; }
+.anim-fade { animation: fadeIn 0.35s ease; }
+.anim-slide { animation: slideUp 0.35s ease; }
+
+/* Yarn chip */
+.yarn-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: 12px;
+  background: var(--bg-tertiary); margin-bottom: 8px;
+}
+.yarn-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Status badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-active { background: rgba(107,154,126,0.15); color: var(--accent-sage); }
+.badge-done { background: rgba(192,108,78,0.15); color: var(--accent-rust); }
+
+/* Full-screen image viewer */
+.lightbox {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.9);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; animation: fadeIn 0.2s;
+}
+.lightbox img { max-width: 95%; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   TRANSLATIONS
+   ═══════════════════════════════════════ */
+const T = {
+  en: {
+    appName:'StitchLog', dashboard:'Dashboard', projects:'Projects', newProject:'New Project',
+    yarnStash:'Yarn Stash', welcome:'Welcome to StitchLog!', welcomeSub:'Track your knitting & crochet projects',
+    activeProjects:'Active', completed:'Completed', totalHours:'Total Hours',
+    recentProjects:'Recent Projects', noProjects:'No projects yet',
+    createFirst:'Create your first project to get started!', projectName:'Project Name',
+    startDate:'Start Date', endDate:'End Date', status:'Status', inProgress:'In Progress',
+    notes:'Notes', save:'Save', cancel:'Cancel', delete:'Delete', edit:'Edit', back:'Back',
+    count:'Count', pattern:'Pattern', details:'Details', gallery:'Gallery',
+    timer:'Timer', start:'Start', pause:'Pause', reset:'Reset',
+    subProjects:'Parts', addSubProject:'Add Part', partName:'Part Name',
+    targetRows:'Target Rows', uploadPdf:'Upload PDF', uploadPhoto:'Upload Photo',
+    noPdf:'No pattern uploaded yet', noPhotos:'No photos yet', yarn:'Yarn', addYarn:'Add Yarn',
+    brand:'Brand', colorName:'Color', colorHex:'Color Hex', weight:'Weight', quantity:'Quantity',
+    unit:'Unit', skeins:'skeins', balls:'balls', meters:'m', yards:'yd', grams:'g',
+    gauge:'Gauge', stitchesPer:'Stitches / 10cm', rowsPer:'Rows / 10cm',
+    needleSize:'Needle / Hook Size', patternGauge:'Pattern Gauge', partGauges:'Part Gauges',
+    addGauge:'Add Gauge', noGaugeYet:'No gauge recorded', share:'Share', shareProject:'Share Project',
+    downloadImage:'Download Image', timeSpent:'Time Spent', totalYarns:'Yarns',
+    chooseCoverPhoto:'Choose Cover Photo', noPhoto:'No Photo',
+    addToStash:'Add Yarn', fiber:'Fiber', yardage:'Yardage', purchaseDate:'Purchase Date',
+    store:'Store', price:'Price', noYarnStash:'Your yarn stash is empty',
+    addFirstYarn:'Start tracking your yarn collection!', page:'Page', of:'/',
+    caption:'Caption', deleteConfirm:'Are you sure you want to delete this?', yes:'Yes', no:'No',
+    h:'h', m:'m', s:'s', progress:'Progress', overview:'Overview',
+    finishedPhoto:'Finished Product', projectInfo:'Project Info',
+    markComplete:'Mark Complete', markInProgress:'Reopen',
+    lace:'Lace', fingering:'Fingering', sport:'Sport', dk:'DK', worsted:'Worsted',
+    aran:'Aran', bulky:'Bulky', superBulky:'Super Bulky',
+    wool:'Wool', cotton:'Cotton', acrylic:'Acrylic', silk:'Silk', alpaca:'Alpaca',
+    mohair:'Mohair', cashmere:'Cashmere', linen:'Linen', blend:'Blend', other:'Other',
+    stitches:'Stitches', stitchesRequired:'Stitches Required', totalStitches:'Total Stitches',
+    switchLang:'繁中', totalSkeins:'Total Skeins', brands:'Brands',
+    tapUpload:'Tap to upload', name:'Name', rows:'rows', noTarget:'No target',
+    startProject:'Start a Project', created:'Created', undo:'Undo',
+    yarnName:'Yarn Name', copyClipboard:'Copied!', projectDetails:'Project Details',
+    complete:'Complete', removePdf:'Remove', swatchSize:'Swatch Size',
+    pdfPattern:'PDF Pattern', viewAll:'View All', search:'Search...', all:'All',
+    nothingHere:'Nothing here yet', addSome:'Add some to get started!',
+    totalProjects:'Total Projects', createProject:'Create Project',
+    projectNotes:'Project notes...', editProject:'Edit Project',
+    remarks:'Remarks', remarksPlaceholder:'e.g. increased 2 stitches, decreased at row 15...',
+    dateFrom:'From', dateTo:'To', filterByDate:'Filter by End Date', clearFilter:'Clear',
+    allStatuses:'All', statusInProgress:'In Progress', statusCompleted:'Completed',
+    searchProjects:'Search projects...',
+  },
+  zh: {
+    appName:'織日誌', dashboard:'儀表板', projects:'專案', newProject:'新增專案',
+    yarnStash:'毛線庫存', welcome:'歡迎使用織日誌！', welcomeSub:'追蹤你的編織與鉤針專案',
+    activeProjects:'進行中', completed:'已完成', totalHours:'總時數',
+    recentProjects:'最近的專案', noProjects:'尚無專案',
+    createFirst:'建立你的第一個專案吧！', projectName:'專案名稱',
+    startDate:'開始日期', endDate:'結束日期', status:'狀態', inProgress:'進行中',
+    notes:'備註', save:'儲存', cancel:'取消', delete:'刪除', edit:'編輯', back:'返回',
+    count:'計數', pattern:'圖案', details:'詳情', gallery:'相簿',
+    timer:'計時器', start:'開始', pause:'暫停', reset:'重置',
+    subProjects:'部件', addSubProject:'新增部件', partName:'部件名稱',
+    targetRows:'目標行數', uploadPdf:'上傳PDF', uploadPhoto:'上傳照片',
+    noPdf:'尚未上傳圖案', noPhotos:'尚無照片', yarn:'毛線', addYarn:'新增毛線',
+    brand:'品牌', colorName:'顏色', colorHex:'色碼', weight:'粗細', quantity:'數量',
+    unit:'單位', skeins:'束', balls:'球', meters:'公尺', yards:'碼', grams:'公克',
+    gauge:'針距', stitchesPer:'每10cm針數', rowsPer:'每10cm行數',
+    needleSize:'針/鉤號數', patternGauge:'圖案針距', partGauges:'部件針距',
+    addGauge:'新增針距', noGaugeYet:'尚未記錄針距', share:'分享', shareProject:'分享專案',
+    downloadImage:'下載圖片', timeSpent:'花費時間', totalYarns:'毛線數',
+    chooseCoverPhoto:'選擇封面照片', noPhoto:'不使用照片',
+    addToStash:'加入庫存', fiber:'纖維', yardage:'長度', purchaseDate:'購買日期',
+    store:'商店', price:'價格', noYarnStash:'毛線庫存是空的',
+    addFirstYarn:'開始追蹤你的毛線收藏吧！', page:'頁', of:'/',
+    caption:'說明', deleteConfirm:'確定要刪除嗎？', yes:'是', no:'否',
+    h:'時', m:'分', s:'秒', progress:'進度', overview:'總覽',
+    finishedPhoto:'成品照片', projectInfo:'專案資訊',
+    markComplete:'標記完成', markInProgress:'重新開啟',
+    lace:'蕾絲', fingering:'極細', sport:'中細', dk:'DK', worsted:'中粗',
+    aran:'粗線', bulky:'特粗', superBulky:'超粗',
+    wool:'羊毛', cotton:'棉', acrylic:'壓克力', silk:'絲', alpaca:'羊駝毛',
+    mohair:'馬海毛', cashmere:'喀什米爾', linen:'亞麻', blend:'混紡', other:'其他',
+    stitches:'針數', stitchesRequired:'所需針數', totalStitches:'總針數',
+    switchLang:'EN', totalSkeins:'總束數', brands:'品牌',
+    tapUpload:'點擊上傳', name:'名稱', rows:'行', noTarget:'無目標',
+    startProject:'開始專案', created:'建立時間', undo:'復原',
+    yarnName:'毛線名稱', copyClipboard:'已複製！', projectDetails:'專案詳情',
+    complete:'完成', removePdf:'移除', swatchSize:'樣本大小',
+    pdfPattern:'PDF圖案', viewAll:'查看全部', search:'搜尋...', all:'全部',
+    nothingHere:'這裡什麼都沒有', addSome:'新增一些開始吧！',
+    totalProjects:'專案總數', createProject:'建立專案',
+    projectNotes:'專案備註...', editProject:'編輯專案',
+    remarks:'備註', remarksPlaceholder:'例：加2針、第15行減針...',
+    dateFrom:'從', dateTo:'到', filterByDate:'依結束日期篩選', clearFilter:'清除',
+    allStatuses:'全部', statusInProgress:'進行中', statusCompleted:'已完成',
+    searchProjects:'搜尋專案...',
+  }
+};
+
+/* ═══════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════ */
+const state = {
+  view: 'dashboard',
+  lang: 'en',
+  projects: [],
+  stash: [],
+  currentProjectId: null,
+  projectTab: 'count',
+  timerInterval: null,
+  pdfDoc: null,
+  pdfPage: 1,
+  pdfTotalPages: 0,
+  dashDateFrom: '',
+  dashDateTo: '',
+  dashStatusFilter: 'all',
+  projectStatusFilter: 'all',
+  projectSearch: '',
+};
+
+function t(k) { return T[state.lang][k] || k; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/* ═══════════════════════════════════════
+   DATABASE (IndexedDB)
+   ═══════════════════════════════════════ */
+let db = null;
+async function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('StitchLogDB', 2);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('projects')) d.createObjectStore('projects', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('stash')) d.createObjectStore('stash', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbPut(store, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).put(data);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbDelete(store, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadData() {
+  try {
+    state.projects = await dbGetAll('projects');
+    state.stash = await dbGetAll('stash');
+    const settings = await dbGetAll('settings');
+    const langSetting = settings.find(s => s.key === 'lang');
+    if (langSetting) { state.lang = langSetting.value; }
+    else {
+      const cookieLang = loadLangFromCookie();
+      if (cookieLang) state.lang = cookieLang;
+    }
+  } catch(e) {
+    const cookieLang = loadLangFromCookie();
+    if (cookieLang) state.lang = cookieLang;
+  }
+}
+let saveTimer = null;
+function saveProject(p) {
+  const idx = state.projects.findIndex(x => x.id === p.id);
+  if (idx >= 0) state.projects[idx] = p; else state.projects.push(p);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { dbPut('projects', p).catch(() => {}); }, 200);
+}
+function saveStashItem(item) {
+  const idx = state.stash.findIndex(x => x.id === item.id);
+  if (idx >= 0) state.stash[idx] = item; else state.stash.push(item);
+  dbPut('stash', item).catch(() => {});
+}
+function saveLang() {
+  dbPut('settings', { key: 'lang', value: state.lang }).catch(() => {});
+  try { document.cookie = 'sl_lang=' + state.lang + ';path=/;max-age=31536000;SameSite=Lax'; } catch(e) {}
+}
+function loadLangFromCookie() {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)sl_lang=(\w+)/);
+    if (m) return m[1];
+  } catch(e) {}
+  return null;
+}
+
+/* ═══════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════ */
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function formatTimeHuman(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h}${t('h')} ${m}${t('m')}`;
+  if (m > 0) return `${m}${t('m')}`;
+  return `${sec}${t('s')}`;
+}
+function getProjectTime(p) {
+  let total = p.timeSpent || 0;
+  if (p.timerStartedAt) total += Math.floor((Date.now() - p.timerStartedAt) / 1000);
+  return total;
+}
+function getTotalRows(p) {
+  return (p.subProjects || []).reduce((s, sp) => s + (sp.rowCount || 0), 0);
+}
+function getTotalTargetRows(p) {
+  return (p.subProjects || []).reduce((s, sp) => s + (sp.targetRows || 0), 0);
+}
+function getOverallProgress(p) {
+  const target = getTotalTargetRows(p);
+  if (!target) return 0;
+  return Math.min(100, Math.round((getTotalRows(p) / target) * 100));
+}
+function getTotalStitches(p) {
+  return (p.subProjects || []).reduce((s, sp) => s + ((sp.stitchesRequired || 0) * (sp.targetRows || 0)), 0);
+}
+function getCompletedStitches(p) {
+  return (p.subProjects || []).reduce((s, sp) => s + ((sp.stitchesRequired || 0) * (sp.rowCount || 0)), 0);
+}
+function getProject(id) { return state.projects.find(p => p.id === id); }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  if (state.lang === 'zh') {
+    return year + '年' + (month + 1) + '月' + day + '日';
+  }
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return String(day).padStart(2, '0') + ' ' + months[month] + ' ' + year;
+}
+
+async function resizeImage(file, maxDim) {
+  maxDim = maxDim || 1200;
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const WEIGHT_KEYS = ['lace','fingering','sport','dk','worsted','aran','bulky','superBulky'];
+const FIBER_KEYS = ['wool','cotton','acrylic','silk','alpaca','mohair','cashmere','linen','blend','other'];
+const UNIT_KEYS = ['skeins','balls','meters','yards','grams'];
+
+function yarnBallSVG(color, size) {
+  size = size || 40;
+  const c = color || '#C06C4E';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="${c}" opacity="0.18"/><circle cx="50" cy="50" r="42" fill="none" stroke="${c}" stroke-width="2.5"/><ellipse cx="50" cy="50" rx="28" ry="38" fill="none" stroke="${c}" stroke-width="1.5" transform="rotate(25 50 50)"/><ellipse cx="50" cy="50" rx="28" ry="38" fill="none" stroke="${c}" stroke-width="1.5" transform="rotate(-25 50 50)"/><path d="M20 50 Q50 25 80 50" fill="none" stroke="${c}" stroke-width="1.5"/><path d="M20 50 Q50 75 80 50" fill="none" stroke="${c}" stroke-width="1.5"/></svg>`;
+}
+
+/* ═══════════════════════════════════════
+   APP CONTROLLER
+   ═══════════════════════════════════════ */
+const app = {
+  navigate(view, projectId) {
+    state.view = view;
+    if (projectId !== undefined) state.currentProjectId = projectId;
+    if (view === 'project') { state.projectTab = 'count'; state.pdfDoc = null; state.pdfPage = 1; }
+    render();
+    document.getElementById('main-content').scrollTop = 0;
+    window.scrollTo(0, 0);
+  },
+
+  toggleLang() {
+    state.lang = state.lang === 'en' ? 'zh' : 'en';
+    saveLang();
+    render();
+  },
+
+  // ─── Projects ───
+  showNewProjectModal() {
+    showModal(t('newProject'), `
+      <div class="form-group">
+        <label class="form-label">${t('projectName')}</label>
+        <input type="text" id="md-name" placeholder="${t('projectName')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('startDate')}</label>
+        <input type="date" id="md-start" value="${todayStr()}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('notes')}</label>
+        <textarea id="md-notes" placeholder="${t('projectNotes')}"></textarea>
+      </div>
+    `, `<button class="btn btn-primary w-full" onclick="app.createProject()">${t('createProject')}</button>`);
+    setTimeout(() => { const el = document.getElementById('md-name'); if(el) el.focus(); }, 100);
+  },
+
+  createProject() {
+    const name = document.getElementById('md-name').value.trim();
+    if (!name) return;
+    const p = {
+      id: uid(), name,
+      startDate: document.getElementById('md-start').value || todayStr(),
+      endDate: '', status: 'in_progress',
+      notes: document.getElementById('md-notes').value || '',
+      pdfData: null, pdfName: '',
+      photos: [], subProjects: [], yarns: [],
+      gauge: { stitches:'', rows:'', needleSize:'', swatchSize:'' },
+      timeSpent: 0, timerStartedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    saveProject(p);
+    closeModal();
+    app.navigate('project', p.id);
+  },
+
+  showEditProjectModal(id) {
+    const p = getProject(id); if(!p) return;
+    showModal(t('editProject'), `
+      <div class="form-group">
+        <label class="form-label">${t('projectName')}</label>
+        <input type="text" id="md-name" value="${esc(p.name)}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('startDate')}</label>
+          <input type="date" id="md-start" value="${p.startDate}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('endDate')}</label>
+          <input type="date" id="md-end" value="${p.endDate || ''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('notes')}</label>
+        <textarea id="md-notes">${esc(p.notes)}</textarea>
+      </div>
+    `, `
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="app.confirmDeleteProject('${p.id}')">${t('delete')}</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">${t('cancel')}</button>
+        <button class="btn btn-primary btn-sm" onclick="app.saveEditProject('${p.id}')">${t('save')}</button>
+      </div>
+    `);
+  },
+
+  saveEditProject(id) {
+    const p = getProject(id); if(!p) return;
+    p.name = document.getElementById('md-name').value.trim() || p.name;
+    p.startDate = document.getElementById('md-start').value || p.startDate;
+    p.endDate = document.getElementById('md-end').value || '';
+    p.notes = document.getElementById('md-notes').value || '';
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  confirmDeleteProject(id) {
+    closeModal();
+    showModal(t('delete'), `<p style="color:var(--text-secondary);margin:12px 0">${t('deleteConfirm')}</p>`, `
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">${t('no')}</button>
+        <button class="btn btn-danger btn-sm" onclick="app.deleteProject('${id}')">${t('yes')}</button>
+      </div>
+    `);
+  },
+
+  async deleteProject(id) {
+    state.projects = state.projects.filter(p => p.id !== id);
+    try { await dbDelete('projects', id); } catch(e) {}
+    closeModal();
+    app.navigate('projects');
+  },
+
+  toggleProjectStatus(id) {
+    const p = getProject(id); if(!p) return;
+    if (p.status === 'in_progress') {
+      p.status = 'completed';
+      p.endDate = p.endDate || todayStr();
+      if (p.timerStartedAt) {
+        p.timeSpent += Math.floor((Date.now() - p.timerStartedAt) / 1000);
+        p.timerStartedAt = null;
+      }
+    } else {
+      p.status = 'in_progress';
+      p.endDate = '';
+    }
+    saveProject(p);
+    render();
+  },
+
+  // ─── Sub-projects ───
+  showAddSubProjectModal(projId) {
+    showModal(t('addSubProject'), `
+      <div class="form-group">
+        <label class="form-label">${t('partName')}</label>
+        <input type="text" id="md-spname" placeholder="${t('partName')}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('targetRows')}</label>
+          <input type="number" id="md-sptarget" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('stitchesRequired')}</label>
+          <input type="number" id="md-spstitches" placeholder="0" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('remarks')}</label>
+        <textarea id="md-spremarks" placeholder="${t('remarksPlaceholder')}" style="min-height:60px;"></textarea>
+      </div>
+    `, `<button class="btn btn-sage w-full" onclick="app.addSubProject('${projId}')">${t('save')}</button>`);
+    setTimeout(() => { const el = document.getElementById('md-spname'); if(el) el.focus(); }, 100);
+  },
+
+  addSubProject(projId) {
+    const p = getProject(projId); if(!p) return;
+    const name = document.getElementById('md-spname').value.trim();
+    if (!name) return;
+    const target = parseInt(document.getElementById('md-sptarget').value) || 0;
+    const stitches = parseInt(document.getElementById('md-spstitches').value) || 0;
+    const remarks = document.getElementById('md-spremarks')?.value?.trim() || '';
+    p.subProjects.push({ id: uid(), name, rowCount: 0, targetRows: target, stitchesRequired: stitches, lastRowCount: 0, notes: '', remarks: remarks, gauge: null });
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  showEditSubProject(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    showModal(t('edit'), `
+      <div class="form-group">
+        <label class="form-label">${t('partName')}</label>
+        <input type="text" id="md-spname" value="${esc(sp.name)}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('targetRows')}</label>
+          <input type="number" id="md-sptarget" value="${sp.targetRows || ''}" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('stitchesRequired')}</label>
+          <input type="number" id="md-spstitches" value="${sp.stitchesRequired || ''}" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('remarks')}</label>
+        <textarea id="md-spremarks" placeholder="${t('remarksPlaceholder')}" style="min-height:60px;">${esc(sp.remarks)}</textarea>
+      </div>
+    `, `
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="app.deleteSubProject('${projId}','${spId}')">${t('delete')}</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-sage btn-sm" onclick="app.saveEditSubProject('${projId}','${spId}')">${t('save')}</button>
+      </div>
+    `);
+  },
+
+  saveEditSubProject(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    sp.name = document.getElementById('md-spname').value.trim() || sp.name;
+    sp.targetRows = parseInt(document.getElementById('md-sptarget').value) || 0;
+    sp.stitchesRequired = parseInt(document.getElementById('md-spstitches').value) || 0;
+    sp.remarks = document.getElementById('md-spremarks')?.value?.trim() || '';
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  deleteSubProject(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    p.subProjects = p.subProjects.filter(s => s.id !== spId);
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  incrementRow(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    sp.lastRowCount = sp.rowCount;
+    sp.rowCount++;
+    saveProject(p);
+    // Animate
+    const el = document.getElementById('count-' + spId);
+    if (el) { el.classList.remove('anim-pop'); void el.offsetWidth; el.classList.add('anim-pop'); }
+    updateCounterDisplay(spId, sp);
+  },
+
+  decrementRow(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    if (sp.rowCount <= 0) return;
+    sp.lastRowCount = sp.rowCount;
+    sp.rowCount--;
+    saveProject(p);
+    const el = document.getElementById('count-' + spId);
+    if (el) { el.classList.remove('anim-pop'); void el.offsetWidth; el.classList.add('anim-pop'); }
+    updateCounterDisplay(spId, sp);
+  },
+
+  undoRow(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    if (sp.lastRowCount !== undefined && sp.lastRowCount !== sp.rowCount) {
+      const temp = sp.rowCount;
+      sp.rowCount = sp.lastRowCount;
+      sp.lastRowCount = temp;
+      saveProject(p);
+      updateCounterDisplay(spId, sp);
+    }
+  },
+
+  // ─── Timer ───
+  startTimer(projId) {
+    const p = getProject(projId); if(!p) return;
+    p.timerStartedAt = Date.now();
+    saveProject(p);
+    startTimerTick();
+    render();
+  },
+
+  pauseTimer(projId) {
+    const p = getProject(projId); if(!p) return;
+    if (p.timerStartedAt) {
+      p.timeSpent += Math.floor((Date.now() - p.timerStartedAt) / 1000);
+      p.timerStartedAt = null;
+    }
+    saveProject(p);
+    stopTimerTick();
+    render();
+  },
+
+  confirmResetTimer(projId) {
+    showModal(t('reset'), `<p style="color:var(--text-secondary);margin:12px 0">${t('deleteConfirm')}</p>`, `
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">${t('no')}</button>
+        <button class="btn btn-danger btn-sm" onclick="app.resetTimer('${projId}')">${t('yes')}</button>
+      </div>
+    `);
+  },
+
+  resetTimer(projId) {
+    const p = getProject(projId); if(!p) return;
+    p.timeSpent = 0; p.timerStartedAt = null;
+    saveProject(p);
+    stopTimerTick();
+    closeModal();
+    render();
+  },
+
+  // ─── PDF ───
+  async uploadPdf(projId) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'application/pdf';
+    input.onchange = async (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      const p = getProject(projId); if(!p) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = btoa(new Uint8Array(ev.target.result).reduce((d, b) => d + String.fromCharCode(b), ''));
+        p.pdfData = base64;
+        p.pdfName = file.name;
+        saveProject(p);
+        state.pdfDoc = null;
+        state.pdfPage = 1;
+        render();
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    input.click();
+  },
+
+  removePdf(projId) {
+    const p = getProject(projId); if(!p) return;
+    p.pdfData = null; p.pdfName = '';
+    state.pdfDoc = null;
+    saveProject(p);
+    render();
+  },
+
+  async renderPdfPage(projId, pageNum) {
+    const p = getProject(projId); if(!p || !p.pdfData) return;
+    try {
+      if (!state.pdfDoc) {
+        const data = Uint8Array.from(atob(p.pdfData), c => c.charCodeAt(0));
+        state.pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+        state.pdfTotalPages = state.pdfDoc.numPages;
+      }
+      pageNum = Math.max(1, Math.min(pageNum, state.pdfTotalPages));
+      state.pdfPage = pageNum;
+      const page = await state.pdfDoc.getPage(pageNum);
+      const canvas = document.getElementById('pdf-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const containerWidth = canvas.parentElement.clientWidth - 4;
+      const origViewport = page.getViewport({ scale: 1 });
+      const scale = containerWidth / origViewport.width;
+      const viewport = page.getViewport({ scale });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const info = document.getElementById('pdf-page-info');
+      if (info) info.textContent = `${t('page')} ${pageNum} ${t('of')} ${state.pdfTotalPages}`;
+    } catch(err) {
+      console.log('PDF error: ' + err.message);
+    }
+  },
+
+  pdfPrev(projId) { app.renderPdfPage(projId, state.pdfPage - 1); },
+  pdfNext(projId) { app.renderPdfPage(projId, state.pdfPage + 1); },
+
+  // ─── Photos ───
+  async uploadPhoto(projId) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      const p = getProject(projId); if(!p) return;
+      const dataUrl = await resizeImage(file);
+      p.photos.push({ id: uid(), data: dataUrl, caption: '', date: todayStr() });
+      saveProject(p);
+      render();
+    };
+    input.click();
+  },
+
+  showPhoto(projId, photoId) {
+    const p = getProject(projId); if(!p) return;
+    const ph = p.photos.find(x => x.id === photoId); if(!ph) return;
+    const el = document.getElementById('modal-root');
+    el.innerHTML = `<div class="lightbox" onclick="closeModal()"><img src="${ph.data}" alt="photo"></div>`;
+  },
+
+  deletePhoto(projId, photoId) {
+    const p = getProject(projId); if(!p) return;
+    p.photos = p.photos.filter(x => x.id !== photoId);
+    saveProject(p);
+    render();
+  },
+
+  // ─── Project Yarn ───
+  showAddYarnModal(projId) {
+    showModal(t('addYarn'), yarnFormHTML(), `
+      <button class="btn btn-sage w-full" onclick="app.addProjectYarn('${projId}')">${t('save')}</button>
+    `);
+  },
+
+  addProjectYarn(projId) {
+    const p = getProject(projId); if(!p) return;
+    const yarn = readYarnForm(); if(!yarn) return;
+    p.yarns.push({ id: uid(), ...yarn });
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  showEditProjectYarn(projId, yarnId) {
+    const p = getProject(projId); if(!p) return;
+    const y = p.yarns.find(x => x.id === yarnId); if(!y) return;
+    showModal(t('edit'), yarnFormHTML(y), `
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="app.deleteProjectYarn('${projId}','${yarnId}')">${t('delete')}</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-sage btn-sm" onclick="app.saveEditProjectYarn('${projId}','${yarnId}')">${t('save')}</button>
+      </div>
+    `);
+  },
+
+  saveEditProjectYarn(projId, yarnId) {
+    const p = getProject(projId); if(!p) return;
+    const y = p.yarns.find(x => x.id === yarnId); if(!y) return;
+    Object.assign(y, readYarnForm());
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  deleteProjectYarn(projId, yarnId) {
+    const p = getProject(projId); if(!p) return;
+    p.yarns = p.yarns.filter(x => x.id !== yarnId);
+    saveProject(p);
+    closeModal();
+    render();
+  },
+
+  // ─── Gauge ───
+  saveGauge(projId) {
+    const p = getProject(projId); if(!p) return;
+    p.gauge = {
+      stitches: document.getElementById('g-stitches')?.value || '',
+      rows: document.getElementById('g-rows')?.value || '',
+      needleSize: document.getElementById('g-needle')?.value || '',
+      swatchSize: document.getElementById('g-swatch')?.value || '',
+    };
+    saveProject(p);
+    showToast(t('save') + ' ✓');
+  },
+
+  // Per-sub-project gauge
+  togglePartGauge(spId) {
+    const el = document.getElementById('part-gauge-' + spId);
+    if (!el) return;
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? 'block' : 'none';
+    const icon = document.getElementById('part-gauge-icon-' + spId);
+    if (icon) icon.className = isHidden ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+  },
+
+  savePartGauge(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    sp.gauge = {
+      stitches: document.getElementById('pg-stitches-' + spId)?.value || '',
+      rows: document.getElementById('pg-rows-' + spId)?.value || '',
+      needleSize: document.getElementById('pg-needle-' + spId)?.value || '',
+      swatchSize: document.getElementById('pg-swatch-' + spId)?.value || '',
+    };
+    saveProject(p);
+    showToast(sp.name + ' — ' + t('save') + ' ✓');
+  },
+
+  removePartGauge(projId, spId) {
+    const p = getProject(projId); if(!p) return;
+    const sp = p.subProjects.find(s => s.id === spId); if(!sp) return;
+    sp.gauge = null;
+    saveProject(p);
+    render();
+  },
+
+  // ─── Yarn Stash ───
+  showAddStashModal() {
+    showModal(t('addToStash'), yarnStashFormHTML(), `
+      <button class="btn btn-primary w-full" onclick="app.addStashItem()">${t('save')}</button>
+    `);
+  },
+
+  addStashItem() {
+    const item = readStashForm(); if(!item) return;
+    item.id = uid();
+    saveStashItem(item);
+    closeModal();
+    render();
+  },
+
+  showEditStashModal(id) {
+    const item = state.stash.find(x => x.id === id); if(!item) return;
+    showModal(t('edit'), yarnStashFormHTML(item), `
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="app.deleteStashItem('${id}')">${t('delete')}</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-primary btn-sm" onclick="app.saveEditStash('${id}')">${t('save')}</button>
+      </div>
+    `);
+  },
+
+  saveEditStash(id) {
+    const item = state.stash.find(x => x.id === id); if(!item) return;
+    Object.assign(item, readStashForm());
+    saveStashItem(item);
+    closeModal();
+    render();
+  },
+
+  async deleteStashItem(id) {
+    state.stash = state.stash.filter(x => x.id !== id);
+    try { await dbDelete('stash', id); } catch(e) {}
+    closeModal();
+    render();
+  },
+
+  // ─── Project Tab ───
+  setProjectTab(tab) {
+    state.projectTab = tab;
+    render();
+    if (tab === 'pattern') {
+      const p = getProject(state.currentProjectId);
+      if (p && p.pdfData) {
+        setTimeout(() => app.renderPdfPage(p.id, state.pdfPage), 100);
+      }
+    }
+  },
+
+  // ─── Share ───
+  shareProject(projId) {
+    const p = getProject(projId); if(!p) return;
+    const photos = p.photos || [];
+
+    // If 2+ photos, show picker first; otherwise go straight to generation
+    if (photos.length >= 2) {
+      showModal(t('chooseCoverPhoto'), `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div onclick="app.generateShareCard('${projId}','')"
+            style="aspect-ratio:1;border-radius:12px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:12px;gap:4px;transition:border-color 0.2s;"
+            onmouseover="this.style.borderColor='var(--accent-rust)'" onmouseout="this.style.borderColor='var(--border)'">
+            <i class="fas fa-image" style="font-size:18px;opacity:0.4;"></i>
+            ${t('noPhoto')}
+          </div>
+          ${photos.map(ph => `
+            <div onclick="app.generateShareCard('${projId}','${ph.id}')"
+              style="aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid var(--border);transition:border-color 0.2s;"
+              onmouseover="this.style.borderColor='var(--accent-rust)'" onmouseout="this.style.borderColor='var(--border)'">
+              <img src="${ph.data}" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+          `).join('')}
+        </div>
+      `, '');
+    } else {
+      const photoData = photos.length === 1 ? photos[0].data : '';
+      this.generateShareCard(projId, '', photoData);
+    }
+  },
+
+  async generateShareCard(projId, photoId, directPhotoData) {
+    const p = getProject(projId); if(!p) return;
+    const isDark = document.documentElement.classList.contains('dark');
+
+    // Resolve which photo to use
+    let coverPhoto = '';
+    if (directPhotoData !== undefined) {
+      coverPhoto = directPhotoData;
+    } else if (photoId) {
+      const found = (p.photos || []).find(ph => ph.id === photoId);
+      if (found) coverPhoto = found.data;
+    }
+
+    showModal(t('shareProject'), `
+      <div style="text-align:center;color:var(--text-muted);padding:16px 0;">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+        <p style="margin-top:8px;">Generating...</p>
+      </div>
+    `, '');
+
+    try {
+      const scale = 2;
+      const W = 400 * scale;
+      const pad = 32 * scale;
+      // Time for share card: h & m only, no seconds
+      const projSec = getProjectTime(p);
+      const sh = Math.floor(projSec / 3600);
+      const sm = Math.floor((projSec % 3600) / 60);
+      const shareTime = sh > 0 ? (sh + t('h') + ' ' + sm + t('m')) : (sm > 0 ? (sm + t('m')) : ('0' + t('m')));
+      const totalRows = getTotalRows(p);
+      const progress = getOverallProgress(p);
+      const yarns = p.yarns || [];
+      const totalSkeins = yarns.reduce((s, y2) => s + (y2.quantity || 0), 0);
+      const yarnColors = yarns.map(y2 => y2.colorHex).filter(Boolean);
+      const uniqueColors = [...new Set(yarnColors)];
+
+      // Colors
+      const bgStart = isDark ? '#252019' : '#F9F3EC';
+      const bgEnd = isDark ? '#1A1612' : '#F0E7DC';
+      const textPrimary = isDark ? '#E8DFD4' : '#2C2218';
+      const textMuted = isDark ? '#7A6F65' : '#9B8E84';
+      const rust = '#C06C4E';
+      const sage = '#6B9A7E';
+      const sageLt = '#A8CCBA';
+      const gold = '#C9A55A';
+
+      // Load cover photo if exists
+      let coverImg = null;
+      if (coverPhoto) {
+        coverImg = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = coverPhoto;
+        });
+      }
+
+      // Calculate height dynamically
+      let y = pad;
+      if (coverImg) y += (W - pad * 2) * 0.75 + 16 * scale; // 4:3 aspect + gap
+      y += 36 * scale; // project name
+      y += 20 * scale; // date line + gap
+      y += 40 * scale; // stats row
+      y += 20 * scale; // gap
+      if (uniqueColors.length > 0) y += 20 * scale + 12 * scale; // color dots row + gap
+      if (progress > 0) y += 16 * scale; // progress bar + gap
+      y += 24 * scale; // footer
+      y += pad;
+
+      const H = y;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // Helper: rounded rect
+      function roundRect(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      // Background gradient with rounded corners
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, bgStart);
+      grad.addColorStop(1, bgEnd);
+      roundRect(0, 0, W, H, 20 * scale);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      let curY = pad;
+
+      // Cover photo
+      if (coverImg) {
+        const imgW = W - pad * 2;
+        const imgH = imgW * 0.75;
+        const r = 14 * scale;
+        ctx.save();
+        roundRect(pad, curY, imgW, imgH, r);
+        ctx.clip();
+        const srcAspect = coverImg.width / coverImg.height;
+        const dstAspect = imgW / imgH;
+        let sx = 0, sy = 0, sw = coverImg.width, sh = coverImg.height;
+        if (srcAspect > dstAspect) {
+          sw = coverImg.height * dstAspect;
+          sx = (coverImg.width - sw) / 2;
+        } else {
+          sh = coverImg.width / dstAspect;
+          sy = (coverImg.height - sh) / 2;
+        }
+        ctx.drawImage(coverImg, sx, sy, sw, sh, pad, curY, imgW, imgH);
+        ctx.restore();
+        curY += imgH + 16 * scale;
+      }
+
+      // Project name
+      ctx.font = `700 ${28 * scale}px Cormorant, serif`;
+      ctx.fillStyle = textPrimary;
+      ctx.textBaseline = 'top';
+      const displayName = p.name.length > 28 ? p.name.slice(0, 26) + '…' : p.name;
+      ctx.fillText(displayName, pad, curY);
+      curY += 36 * scale;
+
+      // Date
+      const dateStr = formatDate(p.startDate) + (p.endDate ? ' → ' + formatDate(p.endDate) : '');
+      if (dateStr) {
+        ctx.font = `400 ${12 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillStyle = textMuted;
+        ctx.fillText(dateStr, pad, curY);
+      }
+      curY += 20 * scale;
+
+      // Stats
+      const skeinLabel = totalSkeins === 1 ? t('skeins').replace(/s$/, '') : t('skeins');
+      const stats = [
+        { val: String(totalRows), label: t('rows'), color: rust },
+        { val: shareTime, label: t('timeSpent'), color: sage },
+        { val: totalSkeins > 0 ? (totalSkeins + ' ' + skeinLabel) : String(yarns.length), label: t('yarn'), color: gold },
+      ];
+      let sx2 = pad;
+      stats.forEach(s => {
+        ctx.font = `700 ${22 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillStyle = s.color;
+        ctx.textBaseline = 'top';
+        ctx.fillText(s.val, sx2, curY);
+        const valW = ctx.measureText(s.val).width;
+        ctx.font = `500 ${11 * scale}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillStyle = textMuted;
+        ctx.fillText(s.label.toUpperCase(), sx2, curY + 28 * scale);
+        const labelW = ctx.measureText(s.label.toUpperCase()).width;
+        sx2 += Math.max(valW, labelW) + 24 * scale;
+      });
+      curY += 40 * scale + 8 * scale;
+
+      // Yarn color dots
+      if (uniqueColors.length > 0) {
+        const dotR = 8 * scale;
+        const dotGap = 6 * scale;
+        let dx = pad;
+        uniqueColors.forEach(hex => {
+          if (dx + dotR * 2 > W - pad) return;
+          ctx.beginPath();
+          ctx.arc(dx + dotR, curY + dotR, dotR, 0, Math.PI * 2);
+          ctx.fillStyle = hex;
+          ctx.fill();
+          // Subtle border
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
+          ctx.lineWidth = 1 * scale;
+          ctx.stroke();
+          dx += dotR * 2 + dotGap;
+        });
+        curY += dotR * 2 + 12 * scale;
+      }
+
+      // Progress bar
+      if (progress > 0) {
+        const barW = W - pad * 2;
+        const barH = 6 * scale;
+        const barR = 3 * scale;
+        roundRect(pad, curY, barW, barH, barR);
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+        ctx.fill();
+        if (progress > 0) {
+          const progGrad = ctx.createLinearGradient(pad, 0, pad + barW * progress / 100, 0);
+          progGrad.addColorStop(0, sage);
+          progGrad.addColorStop(1, sageLt);
+          roundRect(pad, curY, barW * progress / 100, barH, barR);
+          ctx.fillStyle = progGrad;
+          ctx.fill();
+        }
+        curY += barH + 16 * scale;
+      }
+
+      // Footer — pinned to bottom-right
+      ctx.font = `500 ${10 * scale}px "Plus Jakarta Sans", sans-serif`;
+      ctx.fillStyle = textMuted;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('made with ' + t('appName') + ' \uD83E\uDDF6', W - pad, H - pad * 0.6);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      // Export to blob
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const blobUrl = URL.createObjectURL(blob);
+      const previewUrl = canvas.toDataURL('image/png');
+      const safeName = p.name.replace(/[^a-zA-Z0-9]/g, '_');
+
+      const modalBody = document.querySelector('#modal-root .modal-body');
+      if (modalBody) {
+        modalBody.innerHTML = `
+          <div style="text-align:center;">
+            <img src="${previewUrl}" style="max-width:100%;border-radius:12px;border:1px solid var(--border);" alt="share">
+          </div>
+        `;
+      }
+      const actionsContainer = document.querySelector('#modal-root .modal-box');
+      if (actionsContainer) {
+        let actionsDiv = actionsContainer.querySelector('.share-actions-wrap');
+        if (!actionsDiv) {
+          actionsDiv = document.createElement('div');
+          actionsDiv.className = 'share-actions-wrap';
+          actionsDiv.style.cssText = 'padding:0 24px 20px;';
+          actionsContainer.appendChild(actionsDiv);
+        }
+        actionsDiv.innerHTML = `
+          <div style="display:flex;gap:8px">
+            <a href="${blobUrl}" download="StitchLog-${safeName}.png" class="btn btn-primary" style="flex:1;text-align:center;text-decoration:none;">
+              <i class="fas fa-download"></i> ${t('downloadImage')}
+            </a>
+          </div>
+        `;
+      }
+    } catch(err) {
+      const modalBody = document.querySelector('#modal-root .modal-body');
+      if (modalBody) {
+        modalBody.innerHTML = `
+          <div style="text-align:center;color:var(--text-muted);padding:16px 0;">
+            <i class="fas fa-exclamation-triangle" style="font-size:24px;color:var(--accent-rust);"></i>
+            <p style="margin-top:8px;">Could not generate image. Please try again.</p>
+          </div>
+        `;
+      }
+      console.log('Share error: ' + (err && err.message ? err.message : String(err)));
+    }
+  },
+
+  // ─── Save detail fields on blur ───
+  saveDetailNotes(projId) {
+    const p = getProject(projId); if(!p) return;
+    const el = document.getElementById('detail-notes');
+    if (el) { p.notes = el.value; saveProject(p); }
+  },
+
+  // ─── Dashboard date filter ───
+  setDashDateFrom(val) { state.dashDateFrom = val; render(); },
+  setDashDateTo(val) { state.dashDateTo = val; render(); },
+  clearDashDateFilter() { state.dashDateFrom = ''; state.dashDateTo = ''; render(); },
+  setDashStatusFilter(val) { state.dashStatusFilter = val; render(); },
+
+  // ─── Project list filters ───
+  setProjectStatusFilter(val) { state.projectStatusFilter = val; render(); },
+  setProjectSearch(val) {
+    state.projectSearch = val;
+    clearTimeout(state._searchTimer);
+    state._searchTimer = setTimeout(() => {
+      render();
+      // Restore focus to search input after re-render
+      const searchInput = document.querySelector('#project-search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+      }
+    }, 150);
+  },
+};
+
+/* ═══════════════════════════════════════
+   TIMER TICK
+   ═══════════════════════════════════════ */
+function startTimerTick() {
+  stopTimerTick();
+  state.timerInterval = setInterval(() => {
+    if (!state.currentProjectId) return;
+    const p = getProject(state.currentProjectId);
+    if (!p || !p.timerStartedAt) { stopTimerTick(); return; }
+    const el = document.getElementById('timer-display');
+    if (el) el.textContent = formatTime(getProjectTime(p));
+    const badge = document.getElementById('timer-badge');
+    if (badge) badge.textContent = formatTimeHuman(getProjectTime(p));
+  }, 1000);
+}
+function stopTimerTick() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+/* Update counter without full re-render */
+function updateCounterDisplay(spId, sp) {
+  const numEl = document.getElementById('count-' + spId);
+  if (numEl) numEl.textContent = sp.rowCount;
+  if (sp.targetRows) {
+    const pct = Math.min(100, Math.round((sp.rowCount / sp.targetRows) * 100));
+    const fillEl = document.getElementById('fill-' + spId);
+    if (fillEl) fillEl.style.width = pct + '%';
+    const pctEl = document.getElementById('pct-' + spId);
+    if (pctEl) pctEl.textContent = pct + '%';
+  }
+}
+
+/* ═══════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════ */
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showModal(title, body, actions) {
+  const el = document.getElementById('modal-root');
+  el.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>${title}</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">${body}</div>
+        ${actions ? `<div style="padding:0 24px 20px;">${actions}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg-primary);padding:10px 24px;border-radius:30px;font-size:14px;font-weight:600;z-index:300;animation:fadeIn 0.2s;pointer-events:none;';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 1500);
+  setTimeout(() => el.remove(), 1900);
+}
+
+function yarnFormHTML(y) {
+  y = y || {};
+  return `
+    <div class="form-group">
+      <label class="form-label">${t('brand')}</label>
+      <input type="text" id="md-ybrand" value="${esc(y.brand)}" placeholder="${t('brand')}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('colorName')}</label>
+        <input type="text" id="md-ycolor" value="${esc(y.colorName)}" placeholder="${t('colorName')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('colorHex')}</label>
+        <input type="color" id="md-yhex" value="${y.colorHex || '#C06C4E'}" style="height:44px;padding:4px;cursor:pointer;">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('weight')}</label>
+        <select id="md-yweight">
+          ${WEIGHT_KEYS.map(k => `<option value="${k}" ${y.weight===k?'selected':''}>${t(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('quantity')}</label>
+        <input type="number" id="md-yqty" value="${y.quantity||1}" min="0" step="0.5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('unit')}</label>
+      <select id="md-yunit">
+        ${UNIT_KEYS.map(k => `<option value="${k}" ${y.unit===k?'selected':''}>${t(k)}</option>`).join('')}
+      </select>
+    </div>
+  `;
+}
+
+function readYarnForm() {
+  const brand = document.getElementById('md-ybrand')?.value?.trim() || '';
+  return {
+    brand,
+    colorName: document.getElementById('md-ycolor')?.value?.trim() || '',
+    colorHex: document.getElementById('md-yhex')?.value || '#C06C4E',
+    weight: document.getElementById('md-yweight')?.value || 'worsted',
+    quantity: parseFloat(document.getElementById('md-yqty')?.value) || 1,
+    unit: document.getElementById('md-yunit')?.value || 'skeins',
+  };
+}
+
+function yarnStashFormHTML(item) {
+  item = item || {};
+  return `
+    <div class="form-group">
+      <label class="form-label">${t('yarnName')}</label>
+      <input type="text" id="md-sname" value="${esc(item.name)}" placeholder="${t('yarnName')}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('brand')}</label>
+      <input type="text" id="md-sbrand" value="${esc(item.brand)}" placeholder="${t('brand')}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('colorName')}</label>
+        <input type="text" id="md-scolor" value="${esc(item.colorName)}" placeholder="${t('colorName')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('colorHex')}</label>
+        <input type="color" id="md-shex" value="${item.colorHex || '#C06C4E'}" style="height:44px;padding:4px;cursor:pointer;">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('weight')}</label>
+        <select id="md-sweight">
+          ${WEIGHT_KEYS.map(k => `<option value="${k}" ${item.weight===k?'selected':''}>${t(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('fiber')}</label>
+        <select id="md-sfiber">
+          ${FIBER_KEYS.map(k => `<option value="${k}" ${item.fiber===k?'selected':''}>${t(k)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('quantity')}</label>
+        <input type="number" id="md-sqty" value="${item.quantity||1}" min="0" step="0.5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('unit')}</label>
+        <select id="md-sunit">
+          ${UNIT_KEYS.map(k => `<option value="${k}" ${item.unit===k?'selected':''}>${t(k)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('yardage')}</label>
+      <input type="text" id="md-syardage" value="${esc(item.yardage)}" placeholder="e.g. 200m">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">${t('store')}</label>
+        <input type="text" id="md-sstore" value="${esc(item.store)}" placeholder="${t('store')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('price')}</label>
+        <input type="text" id="md-sprice" value="${esc(item.price)}" placeholder="${t('price')}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('purchaseDate')}</label>
+      <input type="date" id="md-sdate" value="${item.purchaseDate || ''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('notes')}</label>
+      <textarea id="md-snotes" placeholder="${t('notes')}">${esc(item.notes)}</textarea>
+    </div>
+  `;
+}
+
+function readStashForm() {
+  return {
+    name: document.getElementById('md-sname')?.value?.trim() || '',
+    brand: document.getElementById('md-sbrand')?.value?.trim() || '',
+    colorName: document.getElementById('md-scolor')?.value?.trim() || '',
+    colorHex: document.getElementById('md-shex')?.value || '#C06C4E',
+    weight: document.getElementById('md-sweight')?.value || 'worsted',
+    fiber: document.getElementById('md-sfiber')?.value || 'wool',
+    quantity: parseFloat(document.getElementById('md-sqty')?.value) || 1,
+    unit: document.getElementById('md-sunit')?.value || 'skeins',
+    yardage: document.getElementById('md-syardage')?.value?.trim() || '',
+    store: document.getElementById('md-sstore')?.value?.trim() || '',
+    price: document.getElementById('md-sprice')?.value?.trim() || '',
+    purchaseDate: document.getElementById('md-sdate')?.value || '',
+    notes: document.getElementById('md-snotes')?.value?.trim() || '',
+  };
+}
+
+/* ═══════════════════════════════════════
+   SHARE CARD BUILDER
+   ═══════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   RENDER
+   ═══════════════════════════════════════ */
+function render() {
+  const appEl = document.getElementById('app');
+  let header = '';
+  let content = '';
+  let showBottomNav = true;
+
+  switch (state.view) {
+    case 'dashboard': header = renderHeader(); content = renderDashboard(); break;
+    case 'projects': header = renderHeader(); content = renderProjectList(); break;
+    case 'project': content = renderProjectDetail(); showBottomNav = false; break;
+    case 'stash': header = renderHeader(); content = renderYarnStash(); break;
+    default: header = renderHeader(); content = renderDashboard();
+  }
+
+  appEl.innerHTML = `
+    ${header}
+    <div id="main-content">${content}</div>
+    ${showBottomNav ? renderBottomNav() : ''}
+  `;
+
+  // Start timer tick if any project has running timer
+  const running = state.projects.find(p => p.timerStartedAt);
+  if (running) startTimerTick(); else stopTimerTick();
+
+  // Render PDF if on pattern tab
+  if (state.view === 'project' && state.projectTab === 'pattern') {
+    const p = getProject(state.currentProjectId);
+    if (p && p.pdfData) {
+      setTimeout(() => app.renderPdfPage(p.id, state.pdfPage), 50);
+    }
+  }
+}
+
+function renderHeader() {
+  return `
+    <div id="app-header" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;">${yarnBallSVG('var(--accent-rust)', 32)}</div>
+        <span style="font-family:Cormorant,serif;font-size:1.5rem;font-weight:700;">${t('appName')}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="header-add-btn" onclick="app.showNewProjectModal()" title="${t('newProject')}">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="btn-ghost" onclick="app.toggleLang()" style="font-weight:700;font-size:14px;border-radius:8px;padding:6px 14px;background:var(--bg-tertiary);">
+          ${t('switchLang')}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderBottomNav() {
+  const items = [
+    { view: 'dashboard', icon: 'fa-home', label: t('dashboard') },
+    { view: 'projects', icon: 'fa-folder-open', label: t('projects') },
+    { view: 'stash', icon: 'fa-box-open', label: t('yarnStash') },
+  ];
+  return `
+    <nav class="bottom-nav">
+      ${items.map(i => `<button class="nav-item ${state.view === i.view ? 'active' : ''}" onclick="app.navigate('${i.view}')">
+          <i class="fas ${i.icon}"></i><span>${i.label}</span>
+        </button>`).join('')}
+    </nav>
+  `;
+}
+
+/* ─── Dashboard ─── */
+function filterDashboardProjects(projects) {
+  let filtered = projects;
+  if (state.dashDateFrom) {
+    filtered = filtered.filter(p => (p.endDate || '') >= state.dashDateFrom);
+  }
+  if (state.dashDateTo) {
+    filtered = filtered.filter(p => (p.endDate || '') <= state.dashDateTo);
+  }
+  if (state.dashStatusFilter === 'in_progress') {
+    filtered = filtered.filter(p => p.status === 'in_progress');
+  } else if (state.dashStatusFilter === 'completed') {
+    filtered = filtered.filter(p => p.status === 'completed');
+  }
+  return filtered;
+}
+
+function renderDashboard() {
+  if (state.projects.length === 0) {
+    return `
+      <div class="anim-fade" style="padding:60px 24px;text-align:center;">
+        <div style="margin:0 auto 24px;width:120px;opacity:0.7;">${yarnBallSVG('var(--accent-rust)', 120)}</div>
+        <h2 style="font-family:Cormorant,serif;font-size:2rem;font-weight:700;margin-bottom:8px;">${t('welcome')}</h2>
+        <p style="color:var(--text-muted);margin-bottom:28px;">${t('welcomeSub')}</p>
+        <button class="btn btn-primary" onclick="app.showNewProjectModal()" style="font-size:16px;padding:14px 32px;">
+          <i class="fas fa-plus"></i> ${t('startProject')}
+        </button>
+      </div>
+    `;
+  }
+
+  const filtered = filterDashboardProjects(state.projects);
+  const active = filtered.filter(p => p.status === 'in_progress');
+  const done = filtered.filter(p => p.status === 'completed');
+  const totalSec = filtered.reduce((s, p) => s + getProjectTime(p), 0);
+  const totalH = (totalSec / 3600).toFixed(1);
+  const hasDateFilter = state.dashDateFrom || state.dashDateTo;
+  const hasAnyFilter = hasDateFilter || state.dashStatusFilter !== 'all';
+
+  const dashStatusFilters = [
+    { key: 'all', label: t('allStatuses') },
+    { key: 'in_progress', label: t('statusInProgress') },
+    { key: 'completed', label: t('statusCompleted') },
+  ];
+
+  const recentProjects = [...filtered].sort((a,b) => {
+    if (a.timerStartedAt && !b.timerStartedAt) return -1;
+    if (!a.timerStartedAt && b.timerStartedAt) return 1;
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  }).slice(0, 5);
+
+  return `
+    <div class="anim-fade" style="padding:20px 16px;">
+      <!-- Filters -->
+      <div class="card" style="padding:14px 16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <i class="fas fa-filter" style="color:var(--accent-rust);font-size:13px;"></i>
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">${t('status')}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          ${dashStatusFilters.map(f => `
+            <button onclick="app.setDashStatusFilter('${f.key}')"
+              class="btn btn-sm ${state.dashStatusFilter === f.key ? '' : 'btn-secondary'}"
+              style="${state.dashStatusFilter === f.key ? 'background:var(--accent-rust);color:#fff;' : ''}">
+              ${f.label}
+            </button>
+          `).join('')}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <i class="fas fa-calendar-alt" style="color:var(--accent-rust);font-size:13px;"></i>
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">${t('filterByDate')}</span>
+          ${hasDateFilter ? `<button class="btn-ghost" onclick="app.clearDashDateFilter()" style="margin-left:auto;font-size:12px;padding:4px 10px;color:var(--accent-rust);"><i class="fas fa-times"></i> ${t('clearFilter')}</button>` : ''}
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="flex:1;">
+            <label class="form-label" style="margin-bottom:4px;">${t('dateFrom')}</label>
+            <input type="date" value="${state.dashDateFrom}" onchange="app.setDashDateFrom(this.value)" style="padding:8px 12px;">
+          </div>
+          <div style="flex:1;">
+            <label class="form-label" style="margin-bottom:4px;">${t('dateTo')}</label>
+            <input type="date" value="${state.dashDateTo}" onchange="app.setDashDateTo(this.value)" style="padding:8px 12px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-number">${active.length}</div>
+          <div class="stat-label">${t('activeProjects')}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" style="color:var(--accent-sage);">${done.length}</div>
+          <div class="stat-label">${t('completed')}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" style="color:var(--accent-gold);">${totalH}</div>
+          <div class="stat-label">${t('totalHours')}</div>
+        </div>
+      </div>
+
+      <!-- Recent Projects -->
+      <div class="stitch-divider">${t('recentProjects')}</div>
+      ${recentProjects.length === 0 ? `
+        <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">
+          <i class="fas fa-filter" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+          ${t('noProjects')}
+        </div>
+      ` : ''}
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${recentProjects.map(p => {
+          const progress = getOverallProgress(p);
+          const time = formatTimeHuman(getProjectTime(p));
+          const isRunning = !!p.timerStartedAt;
+          return `
+            <div class="project-card" onclick="app.navigate('project','${p.id}')">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:32px;">${yarnBallSVG(p.yarns?.[0]?.colorHex || 'var(--accent-rust)', 32)}</div>
+                  <div>
+                    <div style="font-weight:600;font-size:15px;">${esc(p.name)}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${formatDate(p.startDate)}</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge ${p.status==='completed'?'badge-done':'badge-active'}">
+                    ${p.status==='completed' ? t('completed') : t('inProgress')}
+                  </span>
+                  <div style="font-size:12px;color:${isRunning?'var(--accent-sage)':'var(--text-muted)'};margin-top:4px;">
+                    ${isRunning ? '<i class="fas fa-circle" style="font-size:6px;vertical-align:middle;margin-right:3px;animation:fadeIn 1s infinite alternate;"></i>' : ''}
+                    <i class="fas fa-clock"></i> ${time}
+                  </div>
+                </div>
+              </div>
+              ${progress > 0 ? `
+                <div class="progress-bar" style="margin-top:4px;">
+                  <div class="progress-fill" style="width:${progress}%"></div>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right;">${progress}%</div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${state.stash.length > 0 ? `
+        <div class="stitch-divider">${t('yarnStash')}</div>
+        <div class="stat-card" onclick="app.navigate('stash')" style="cursor:pointer;display:flex;align-items:center;gap:16px;padding:16px 20px;">
+          <div style="font-size:28px;">🧶</div>
+          <div>
+            <div style="font-weight:700;font-size:18px;">${state.stash.reduce((s,i)=>s+(i.quantity||0),0)} ${t('totalSkeins')}</div>
+            <div style="font-size:13px;color:var(--text-muted);">${[...new Set(state.stash.map(i=>i.brand).filter(Boolean))].length} ${t('brands')}</div>
+          </div>
+          <div style="flex:1;text-align:right;"><i class="fas fa-chevron-right" style="color:var(--text-muted);"></i></div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+/* ─── Project List ─── */
+function renderProjectList() {
+  let projects = [...state.projects];
+
+  // Apply status filter
+  if (state.projectStatusFilter === 'in_progress') {
+    projects = projects.filter(p => p.status === 'in_progress');
+  } else if (state.projectStatusFilter === 'completed') {
+    projects = projects.filter(p => p.status === 'completed');
+  }
+
+  // Apply search filter
+  const searchQ = (state.projectSearch || '').toLowerCase().trim();
+  if (searchQ) {
+    projects = projects.filter(p =>
+      (p.name || '').toLowerCase().includes(searchQ) ||
+      (p.notes || '').toLowerCase().includes(searchQ)
+    );
+  }
+
+  // Sort
+  projects.sort((a,b) => {
+    if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+    if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
+    return (b.createdAt||'').localeCompare(a.createdAt||'');
+  });
+
+  const totalCount = state.projects.length;
+
+  if (totalCount === 0) {
+    return `
+      <div style="padding:60px 24px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">📂</div>
+        <h3 style="font-family:Cormorant,serif;font-size:1.5rem;font-weight:700;margin-bottom:8px;">${t('noProjects')}</h3>
+        <p style="color:var(--text-muted);margin-bottom:20px;">${t('createFirst')}</p>
+        <button class="btn btn-primary" onclick="app.showNewProjectModal()"><i class="fas fa-plus"></i> ${t('newProject')}</button>
+      </div>
+    `;
+  }
+
+  const statusFilters = [
+    { key: 'all', label: t('allStatuses') },
+    { key: 'in_progress', label: t('statusInProgress') },
+    { key: 'completed', label: t('statusCompleted') },
+  ];
+
+  return `
+    <div class="anim-fade" style="padding:20px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h2 style="font-family:Cormorant,serif;font-size:1.6rem;font-weight:700;">${t('projects')} <span style="font-size:1rem;color:var(--text-muted);">(${projects.length}/${totalCount})</span></h2>
+      </div>
+
+      <!-- Search bar -->
+      <div style="position:relative;margin-bottom:12px;">
+        <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+        <input type="text" id="project-search-input" placeholder="${t('searchProjects')}" value="${esc(state.projectSearch)}"
+          oninput="app.setProjectSearch(this.value)"
+          style="padding-left:38px;border-radius:12px;">
+      </div>
+
+      <!-- Status filter chips -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        ${statusFilters.map(f => `
+          <button onclick="app.setProjectStatusFilter('${f.key}')"
+            class="btn btn-sm ${state.projectStatusFilter === f.key ? '' : 'btn-secondary'}"
+            style="${state.projectStatusFilter === f.key ? 'background:var(--accent-rust);color:#fff;' : ''}">
+            ${f.label}
+          </button>
+        `).join('')}
+      </div>
+
+      ${projects.length === 0 ? `
+        <div style="text-align:center;padding:32px;color:var(--text-muted);">
+          <i class="fas fa-filter" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+          <p>${t('noProjects')}</p>
+        </div>
+      ` : ''}
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${projects.map(p => {
+          const progress = getOverallProgress(p);
+          const time = formatTimeHuman(getProjectTime(p));
+          const yarnCount = (p.yarns||[]).length;
+          return `
+            <div class="project-card" onclick="app.navigate('project','${p.id}')">
+              <div style="display:flex;align-items:center;gap:12px;">
+                ${p.photos?.length > 0
+                  ? `<div style="width:52px;height:52px;border-radius:12px;overflow:hidden;flex-shrink:0;border:1px solid var(--border);"><img src="${p.photos[p.photos.length-1].data}" style="width:100%;height:100%;object-fit:cover;"></div>`
+                  : `<div style="width:52px;flex-shrink:0;">${yarnBallSVG(p.yarns?.[0]?.colorHex || 'var(--accent-rust)', 52)}</div>`
+                }
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.name)}</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+                    ${formatDate(p.startDate)}${p.endDate ? ' → ' + formatDate(p.endDate) : ''} &middot; <i class="fas fa-clock"></i> ${time}
+                    ${yarnCount ? ` &middot; 🧶 ${yarnCount}` : ''}
+                  </div>
+                  ${progress > 0 ? `
+                    <div class="progress-bar" style="margin-top:6px;">
+                      <div class="progress-fill" style="width:${progress}%"></div>
+                    </div>
+                  ` : ''}
+                </div>
+                <span class="badge ${p.status==='completed'?'badge-done':'badge-active'}" style="flex-shrink:0;">
+                  ${p.status==='completed' ? t('completed') : t('inProgress')}
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ─── Project Detail ─── */
+function renderProjectDetail() {
+  const p = getProject(state.currentProjectId);
+  if (!p) return '<div style="padding:40px;text-align:center;">Project not found</div>';
+  const isRunning = !!p.timerStartedAt;
+  const time = formatTime(getProjectTime(p));
+
+  const tabs = [
+    { key:'count', icon:'fa-hashtag', label:t('count') },
+    { key:'pattern', icon:'fa-file-pdf', label:t('pattern') },
+    { key:'details', icon:'fa-info-circle', label:t('details') },
+    { key:'gallery', icon:'fa-images', label:t('gallery') },
+  ];
+
+  let tabContent = '';
+  switch (state.projectTab) {
+    case 'count': tabContent = renderCountTab(p); break;
+    case 'pattern': tabContent = renderPatternTab(p); break;
+    case 'details': tabContent = renderDetailsTab(p); break;
+    case 'gallery': tabContent = renderGalleryTab(p); break;
+  }
+
+  return `
+    <div class="anim-fade">
+      <!-- Project Header -->
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg-primary);position:sticky;top:0;z-index:30;">
+        <button class="btn-ghost" onclick="app.navigate('projects')" style="padding:8px;"><i class="fas fa-arrow-left"></i></button>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:Cormorant,serif;font-weight:700;font-size:1.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.name)}</div>
+          <div style="font-size:11px;color:var(--text-muted);">
+            <span class="badge ${p.status==='completed'?'badge-done':'badge-active'}" style="font-size:10px;">${p.status==='completed'?t('completed'):t('inProgress')}</span>
+            <span id="timer-badge" style="margin-left:6px;color:${isRunning?'var(--accent-sage)':'var(--text-muted)'};">
+              ${isRunning ? '⏱ ' : ''}<i class="fas fa-clock"></i> ${formatTimeHuman(getProjectTime(p))}
+            </span>
+          </div>
+        </div>
+        <button class="btn-ghost" onclick="app.shareProject('${p.id}')" title="${t('share')}"><i class="fas fa-share-alt"></i></button>
+        <button class="btn-ghost" onclick="app.showEditProjectModal('${p.id}')" title="${t('edit')}"><i class="fas fa-ellipsis-v"></i></button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar" style="padding:0 8px;">
+        ${tabs.map(tab => `
+          <button class="tab-item ${state.projectTab===tab.key?'active':''}" onclick="app.setProjectTab('${tab.key}')">
+            <i class="fas ${tab.icon}" style="margin-right:4px;font-size:12px;"></i>${tab.label}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- Tab Content -->
+      <div style="padding:16px;padding-bottom:40px;">
+        ${tabContent}
+      </div>
+
+      <!-- Bottom actions -->
+      <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:var(--bg-secondary);border-top:1px solid var(--border);display:flex;gap:8px;z-index:30;">
+        <button class="btn ${p.status==='completed'?'btn-sage':'btn-primary'} btn-sm" onclick="app.toggleProjectStatus('${p.id}')" style="flex:1;">
+          <i class="fas ${p.status==='completed'?'fa-redo':'fa-check'}"></i>
+          ${p.status==='completed' ? t('markInProgress') : t('markComplete')}
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="app.navigate('dashboard')" style="padding:8px 14px;">
+          <i class="fas fa-home"></i>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderCountTab(p) {
+  const isRunning = !!p.timerStartedAt;
+  const time = formatTime(getProjectTime(p));
+
+  return `
+    <!-- Timer -->
+    <div class="card" style="padding:20px;text-align:center;margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">${t('timer')}</div>
+      <div class="timer-display ${isRunning?'timer-running':''}" id="timer-display">${time}</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;">
+        ${isRunning
+          ? `<button class="btn btn-secondary" onclick="app.pauseTimer('${p.id}')"><i class="fas fa-pause"></i> ${t('pause')}</button>`
+          : `<button class="btn btn-sage" onclick="app.startTimer('${p.id}')"><i class="fas fa-play"></i> ${t('start')}</button>`
+        }
+        <button class="btn btn-ghost" onclick="app.confirmResetTimer('${p.id}')"><i class="fas fa-undo"></i> ${t('reset')}</button>
+      </div>
+    </div>
+
+    <!-- Sub-projects / Counters -->
+    <div class="stitch-divider">${t('subProjects')}</div>
+    ${(p.subProjects || []).length === 0 ? `
+      <div style="text-align:center;padding:30px;color:var(--text-muted);">
+        <i class="fas fa-layer-group" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+        <p>${t('nothingHere')}</p>
+      </div>
+    ` : ''}
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${(p.subProjects || []).map(sp => {
+        const pct = sp.targetRows ? Math.min(100, Math.round((sp.rowCount / sp.targetRows) * 100)) : 0;
+        return `
+          <div class="counter-wrap">
+            <button class="counter-undo" onclick="app.undoRow('${p.id}','${sp.id}')" title="${t('undo')}"><i class="fas fa-undo"></i></button>
+            <div style="font-weight:600;font-size:14px;margin-bottom:12px;cursor:pointer;" onclick="app.showEditSubProject('${p.id}','${sp.id}')">
+              ${esc(sp.name)} <i class="fas fa-pen" style="font-size:10px;color:var(--text-muted);margin-left:4px;"></i>
+            </div>
+            <div class="counter-number" id="count-${sp.id}">${sp.rowCount}</div>
+            <div class="counter-target" style="font-size:1rem;">${t('rows')}</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:10px;">
+            ${sp.targetRows ? `
+              <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text-secondary);">
+                <i class="fas fa-bullseye" style="font-size:10px;color:var(--accent-rust);"></i>
+                <span style="font-weight:600;">${sp.targetRows}</span> ${t('rows')}
+              </div>
+            ` : ''}
+            ${sp.stitchesRequired ? `
+              <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text-secondary);">
+                <i class="fas fa-grip-lines" style="font-size:10px;color:var(--accent-gold);"></i>
+                <span style="font-weight:600;">${sp.stitchesRequired}</span> ${t('stitches')}/${state.lang === 'zh' ? '行' : 'row'}
+              </div>
+            ` : ''}
+            </div>
+            ${sp.remarks ? `
+              <div style="margin-top:10px;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text-secondary);text-align:left;">
+                <i class="fas fa-sticky-note" style="font-size:10px;color:var(--accent-gold);margin-right:6px;"></i>
+                ${esc(sp.remarks).replace(/\n/g, '<br>')}
+              </div>
+            ` : ''}
+            <div style="display:flex;align-items:center;justify-content:center;gap:40px;margin-top:18px;">
+              <button class="counter-btn counter-minus" onclick="app.decrementRow('${p.id}','${sp.id}')">−</button>
+              <button class="counter-btn counter-plus" onclick="app.incrementRow('${p.id}','${sp.id}')">+</button>
+            </div>
+            ${sp.targetRows ? `
+              <div class="progress-bar" style="margin-top:16px;">
+                <div class="progress-fill" id="fill-${sp.id}" style="width:${pct}%"></div>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;text-align:right;" id="pct-${sp.id}">${pct}%</div>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn btn-secondary" onclick="app.showAddSubProjectModal('${p.id}')">
+        <i class="fas fa-plus"></i> ${t('addSubProject')}
+      </button>
+    </div>
+  `;
+}
+
+function renderPatternTab(p) {
+  if (!p.pdfData) {
+    return `
+      <div style="text-align:center;padding:40px 20px;">
+        <i class="fas fa-file-pdf" style="font-size:48px;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
+        <p style="color:var(--text-muted);margin-bottom:20px;">${t('noPdf')}</p>
+        <button class="btn btn-primary" onclick="app.uploadPdf('${p.id}')">
+          <i class="fas fa-upload"></i> ${t('uploadPdf')}
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;color:var(--text-secondary);"><i class="fas fa-file-pdf" style="color:#D4595C;"></i> ${esc(p.pdfName)}</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="app.uploadPdf('${p.id}')"><i class="fas fa-sync-alt"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="app.removePdf('${p.id}')" style="color:#D4595C;"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+    <div class="pdf-canvas-wrap">
+      <canvas id="pdf-canvas"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="app.pdfPrev('${p.id}')"><i class="fas fa-chevron-left"></i></button>
+      <span id="pdf-page-info" style="font-size:13px;color:var(--text-muted);">${t('page')} ${state.pdfPage}</span>
+      <button class="btn btn-secondary btn-sm" onclick="app.pdfNext('${p.id}')"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  `;
+}
+
+function renderDetailsTab(p) {
+  const g = p.gauge || {};
+  return `
+    <!-- Project Info -->
+    <div class="card" style="padding:20px;margin-bottom:16px;">
+      <div class="stitch-divider" style="margin-top:0;">${t('projectInfo')}</div>
+      <div class="form-group">
+        <label class="form-label">${t('startDate')}</label>
+        <input type="date" value="${p.startDate}" onchange="(function(el){const pr=getProject('${p.id}');if(pr){pr.startDate=el.value;saveProject(pr)}})(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('endDate')}</label>
+        <input type="date" value="${p.endDate||''}" onchange="(function(el){const pr=getProject('${p.id}');if(pr){pr.endDate=el.value;saveProject(pr)}})(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">${t('notes')}</label>
+        <textarea id="detail-notes" onblur="app.saveDetailNotes('${p.id}')" placeholder="${t('projectNotes')}">${esc(p.notes)}</textarea>
+      </div>
+    </div>
+
+    <!-- Pattern Gauge -->
+    <div class="card" style="padding:20px;margin-bottom:16px;">
+      <div class="stitch-divider" style="margin-top:0;">${t('patternGauge')}</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('stitchesPer')}</label>
+          <input type="text" id="g-stitches" value="${esc(g.stitches)}" placeholder="e.g. 20">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('rowsPer')}</label>
+          <input type="text" id="g-rows" value="${esc(g.rows)}" placeholder="e.g. 28">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">${t('needleSize')}</label>
+          <input type="text" id="g-needle" value="${esc(g.needleSize)}" placeholder="e.g. 4mm">
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('swatchSize')}</label>
+          <input type="text" id="g-swatch" value="${esc(g.swatchSize)}" placeholder="e.g. 10x10cm">
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="app.saveGauge('${p.id}')" style="width:100%;margin-top:4px;">
+        <i class="fas fa-save"></i> ${t('save')}
+      </button>
+    </div>
+
+    <!-- Per-Part Gauges -->
+    ${(p.subProjects || []).length > 0 ? `
+    <div class="card" style="padding:20px;margin-bottom:16px;">
+      <div class="stitch-divider" style="margin-top:0;">${t('partGauges')}</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${(p.subProjects || []).map(sp => {
+          const sg = sp.gauge || {};
+          const hasGauge = sg.stitches || sg.rows || sg.needleSize || sg.swatchSize;
+          return `
+            <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <button onclick="app.togglePartGauge('${sp.id}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-tertiary);border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text-primary);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <i class="fas fa-ruler-combined" style="font-size:12px;color:var(--accent-gold);"></i>
+                  <span style="font-weight:600;font-size:14px;">${esc(sp.name)}</span>
+                  ${hasGauge ? '<span style="font-size:11px;color:var(--accent-sage);margin-left:4px;">✓</span>' : ''}
+                </div>
+                <i id="part-gauge-icon-${sp.id}" class="fas fa-chevron-down" style="font-size:12px;color:var(--text-muted);"></i>
+              </button>
+              <div id="part-gauge-${sp.id}" style="display:none;padding:14px 16px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">${t('stitchesPer')}</label>
+                    <input type="text" id="pg-stitches-${sp.id}" value="${esc(sg.stitches)}" placeholder="e.g. 20">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">${t('rowsPer')}</label>
+                    <input type="text" id="pg-rows-${sp.id}" value="${esc(sg.rows)}" placeholder="e.g. 28">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">${t('needleSize')}</label>
+                    <input type="text" id="pg-needle-${sp.id}" value="${esc(sg.needleSize)}" placeholder="e.g. 4mm">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">${t('swatchSize')}</label>
+                    <input type="text" id="pg-swatch-${sp.id}" value="${esc(sg.swatchSize)}" placeholder="e.g. 10x10cm">
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:4px;">
+                  ${hasGauge ? `<button class="btn btn-ghost btn-sm" onclick="app.removePartGauge('${p.id}','${sp.id}')" style="color:#D4595C;padding:6px 10px;"><i class="fas fa-trash" style="font-size:11px;"></i></button>` : ''}
+                  <button class="btn btn-secondary btn-sm" onclick="app.savePartGauge('${p.id}','${sp.id}')" style="flex:1;">
+                    <i class="fas fa-save"></i> ${t('save')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- Yarn Used -->
+    <div class="card" style="padding:20px;">
+      <div class="stitch-divider" style="margin-top:0;">${t('yarn')}</div>
+      ${(p.yarns||[]).length === 0 ? `
+        <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">${t('nothingHere')}</div>
+      ` : ''}
+      ${(p.yarns||[]).map(y => `
+        <div class="yarn-chip" onclick="app.showEditProjectYarn('${p.id}','${y.id}')" style="cursor:pointer;">
+          <div class="yarn-dot" style="background:${y.colorHex};"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;">${esc(y.brand)} ${esc(y.colorName)}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${t(y.weight)} &middot; ${y.quantity} ${t(y.unit)}</div>
+          </div>
+          <i class="fas fa-pen" style="color:var(--text-muted);font-size:12px;"></i>
+        </div>
+      `).join('')}
+      <button class="btn btn-secondary btn-sm" onclick="app.showAddYarnModal('${p.id}')" style="width:100%;margin-top:8px;">
+        <i class="fas fa-plus"></i> ${t('addYarn')}
+      </button>
+    </div>
+  `;
+}
+
+function renderGalleryTab(p) {
+  return `
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="app.uploadPhoto('${p.id}')">
+        <i class="fas fa-camera"></i> ${t('uploadPhoto')}
+      </button>
+    </div>
+    ${(p.photos||[]).length === 0 ? `
+      <div style="text-align:center;padding:40px 20px;">
+        <i class="fas fa-images" style="font-size:48px;color:var(--text-muted);margin-bottom:16px;display:block;"></i>
+        <p style="color:var(--text-muted);">${t('noPhotos')}</p>
+      </div>
+    ` : `
+      <div class="photo-grid">
+        ${(p.photos||[]).map(ph => `
+          <div class="photo-thumb" style="position:relative;">
+            <img src="${ph.data}" alt="photo" onclick="app.showPhoto('${p.id}','${ph.id}')">
+            <button onclick="event.stopPropagation();app.deletePhoto('${p.id}','${ph.id}')" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-times"></i>
+            </button>
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:linear-gradient(transparent,rgba(0,0,0,0.5));color:#fff;font-size:11px;border-radius:0 0 12px 12px;">
+              ${formatDate(ph.date)}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+/* ─── Yarn Stash ─── */
+function renderYarnStash() {
+  if (state.stash.length === 0) {
+    return `
+      <div style="padding:60px 24px;text-align:center;" class="anim-fade">
+        <div style="font-size:64px;margin-bottom:16px;">🧶</div>
+        <h3 style="font-family:Cormorant,serif;font-size:1.5rem;font-weight:700;margin-bottom:8px;">${t('noYarnStash')}</h3>
+        <p style="color:var(--text-muted);margin-bottom:20px;">${t('addFirstYarn')}</p>
+        <button class="btn btn-primary" onclick="app.showAddStashModal()"><i class="fas fa-plus"></i> ${t('addToStash')}</button>
+      </div>
+    `;
+  }
+
+  const totalQty = state.stash.reduce((s,i) => s + (i.quantity||0), 0);
+  const brands = [...new Set(state.stash.map(i=>i.brand).filter(Boolean))];
+
+  return `
+    <div class="anim-fade" style="padding:20px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="font-family:Cormorant,serif;font-size:1.6rem;font-weight:700;">${t('yarnStash')}</h2>
+        <button class="btn btn-primary btn-sm" onclick="app.showAddStashModal()"><i class="fas fa-plus"></i> ${t('addToStash')}</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="stat-number">${totalQty}</div>
+          <div class="stat-label">${t('totalSkeins')}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" style="color:var(--accent-sage);">${brands.length}</div>
+          <div class="stat-label">${t('brands')}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${state.stash.map(item => `
+          <div class="yarn-chip" onclick="app.showEditStashModal('${item.id}')" style="cursor:pointer;padding:14px 16px;">
+            <div class="yarn-dot" style="background:${item.colorHex};width:28px;height:28px;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:14px;">${esc(item.name || item.brand)}</div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                ${esc(item.brand)}${item.colorName ? ' · ' + esc(item.colorName) : ''}
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                ${t(item.weight)} · ${t(item.fiber)} · ${item.quantity} ${t(item.unit)}
+                ${item.yardage ? ' · ' + esc(item.yardage) : ''}
+              </div>
+              ${item.store || item.price ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                ${item.store ? '🏪 ' + esc(item.store) : ''}${item.price ? ' · ' + esc(item.price) : ''}
+              </div>` : ''}
+            </div>
+            <i class="fas fa-chevron-right" style="color:var(--text-muted);font-size:12px;"></i>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+(async function init() {
+  // Dark mode detection
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.classList.add('dark');
+  }
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    if (event.matches) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  });
+
+  // PDF.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  // Init DB
+  try {
+    await initDB();
+    await loadData();
+  } catch(e) {
+    console.log('DB init error, using in-memory: ' + e.message);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
