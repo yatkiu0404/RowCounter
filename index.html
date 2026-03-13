@@ -270,7 +270,65 @@ textarea { resize: vertical; min-height: 80px; }
   text-transform: uppercase; letter-spacing: 0.5px;
 }
 .form-row { display: flex; gap: 12px; }
-.form-row > * { flex: 1; }
+.form-row > * { flex: 1; min-width: 0; }
+@media (max-width: 420px) {
+  .form-row { flex-direction: column; gap: 0; }
+}
+
+/* Date input with formatted locale overlay */
+.date-wrap {
+  position: relative;
+  cursor: pointer;
+}
+.date-wrap input[type="date"] {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  pointer-events: none;
+}
+.date-wrap input[type="date"]::-webkit-date-and-time-value {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.date-wrap::after {
+  content: attr(data-display);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: var(--date-pad, 10px 14px);
+  pointer-events: none;
+  font-size: 16px;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.date-wrap[data-display=""]::after {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+}
+
+/* Custom date picker */
+.dp-overlay { position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.18); animation:fadeIn 0.1s; }
+.dp-card { position:fixed; background:var(--bg-primary); border-radius:14px; padding:16px; width:calc(100vw - 32px); max-width:380px; box-shadow:0 8px 30px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1); border:1px solid var(--border); }
+.dp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.dp-nav { width:38px; height:38px; border-radius:50%; border:none; background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; font-family:inherit; }
+.dp-nav:active { opacity:0.65; }
+.dp-title { font-weight:700; font-size:16px; color:var(--text-primary); }
+.dp-grid { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; }
+.dp-day-label { font-size:11px; color:var(--text-muted); padding:6px 0 8px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.dp-cell { padding:0; border:none; background:none; color:var(--text-primary); font-size:14px; font-weight:500; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:2px auto; cursor:pointer; font-family:inherit; transition:background 0.1s; }
+.dp-cell:active { background:var(--bg-secondary); }
+.dp-cell.sel { background:var(--accent-rust); color:#fff; font-weight:700; }
+.dp-cell.today:not(.sel) { box-shadow:inset 0 0 0 2px var(--accent-sage); }
+.dp-cell.dim { color:var(--text-muted); opacity:0.3; pointer-events:none; }
+.dp-actions { display:flex; gap:8px; margin-top:18px; }
+.dp-actions button { flex:1; padding:11px; border-radius:12px; border:none; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit; transition:opacity 0.1s; }
+.dp-actions button:active { opacity:0.7; }
 
 /* Stats */
 .stat-card {
@@ -427,7 +485,7 @@ const T = {
     remarks:'Remarks', remarksPlaceholder:'e.g. increased 2 stitches, decreased at row 15...',
     dateFrom:'From', dateTo:'To', filterByDate:'Filter by End Date', clearFilter:'Clear',
     allStatuses:'All', statusInProgress:'In Progress', statusCompleted:'Completed',
-    searchProjects:'Search projects...',
+    searchProjects:'Search projects...', datePlaceholder:'Select date',
   },
   zh: {
     appName:'織日誌', dashboard:'儀表板', projects:'專案', newProject:'新增專案',
@@ -473,7 +531,7 @@ const T = {
     remarks:'備註', remarksPlaceholder:'例：加2針、第15行減針...',
     dateFrom:'從', dateTo:'到', filterByDate:'依結束日期篩選', clearFilter:'清除',
     allStatuses:'全部', statusInProgress:'進行中', statusCompleted:'已完成',
-    searchProjects:'搜尋專案...',
+    searchProjects:'搜尋專案...', datePlaceholder:'選擇日期',
   }
 };
 
@@ -637,6 +695,118 @@ function formatDate(dateStr) {
   return String(day).padStart(2, '0') + ' ' + months[month] + ' ' + year;
 }
 
+/* ═══════════════════════════════════════
+   CUSTOM DATE PICKER
+   ═══════════════════════════════════════ */
+const DP_MONTHS = {
+  en:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  zh:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+};
+const DP_DAYS = { en:['Su','Mo','Tu','We','Th','Fr','Sa'], zh:['日','一','二','三','四','五','六'] };
+let _dp = null;
+
+function openDatePicker(wrap) {
+  if (document.getElementById('dp-overlay')) return;
+  const val = wrap.querySelector('input').value;
+  const now = new Date();
+  let y, m, sy, sm, sd;
+  if (val) { const p=val.split('-'); y=sy=+p[0]; m=sm=+p[1]-1; sd=+p[2]; }
+  else { y=now.getFullYear(); m=now.getMonth(); sy=null; sm=null; sd=null; }
+  _dp = { wrap, y, m, sy, sm, sd };
+  drawDP();
+}
+
+function drawDP() {
+  if (!_dp) return;
+  const {y, m, sy, sm, sd} = _dp;
+  const lang = state.lang;
+  const ms = DP_MONTHS[lang] || DP_MONTHS.en;
+  const ds = DP_DAYS[lang] || DP_DAYS.en;
+  const now = new Date(), tY = now.getFullYear(), tM = now.getMonth(), tD = now.getDate();
+  const first = new Date(y, m, 1).getDay();
+  const dim = new Date(y, m + 1, 0).getDate();
+  const pDim = new Date(y, m, 0).getDate();
+
+  let cells = '';
+  for (let i = first - 1; i >= 0; i--) cells += '<div class="dp-cell dim">' + (pDim - i) + '</div>';
+  for (let d = 1; d <= dim; d++) {
+    const cls = ['dp-cell'];
+    if (y === tY && m === tM && d === tD) cls.push('today');
+    if (y === sy && m === sm && d === sd) cls.push('sel');
+    cells += '<div class="' + cls.join(' ') + '" data-d="' + d + '">' + d + '</div>';
+  }
+  const rem = (7 - (first + dim) % 7) % 7;
+  for (let d = 1; d <= rem; d++) cells += '<div class="dp-cell dim">' + d + '</div>';
+
+  const title = lang === 'zh' ? (y + '年 ' + ms[m]) : (ms[m] + ' ' + y);
+  const tToday = lang === 'zh' ? '今天' : 'Today';
+  const tClear = lang === 'zh' ? '清除' : 'Clear';
+  const tClose = lang === 'zh' ? '關閉' : 'Close';
+
+  let el = document.getElementById('dp-overlay');
+  if (!el) { el = document.createElement('div'); el.id = 'dp-overlay'; el.className = 'dp-overlay'; document.body.appendChild(el); }
+  el.innerHTML =
+    '<div class="dp-card" onclick="event.stopPropagation()">' +
+      '<div class="dp-header">' +
+        '<button class="dp-nav" onclick="dpGo(-1)"><i class="fas fa-chevron-left"></i></button>' +
+        '<span class="dp-title">' + title + '</span>' +
+        '<button class="dp-nav" onclick="dpGo(1)"><i class="fas fa-chevron-right"></i></button>' +
+      '</div>' +
+      '<div class="dp-grid">' + ds.map(function(d){ return '<div class="dp-day-label">' + d + '</div>'; }).join('') + cells + '</div>' +
+      '<div class="dp-actions">' +
+        '<button style="background:var(--bg-secondary);color:var(--text-primary)" onclick="dpToday()">' + tToday + '</button>' +
+        '<button style="background:var(--bg-secondary);color:var(--accent-rust)" onclick="dpClearVal()">' + tClear + '</button>' +
+        '<button style="background:var(--accent-rust);color:#fff" onclick="dpDone()">' + tClose + '</button>' +
+      '</div>' +
+    '</div>';
+
+  el.onclick = function(e) { if (e.target === el) dpDone(); };
+  el.querySelector('.dp-grid').addEventListener('click', function(e) {
+    var c = e.target.closest('[data-d]');
+    if (c) dpPick(_dp.y, _dp.m, +c.dataset.d);
+  });
+
+  /* Position card below (or above) the date field */
+  requestAnimationFrame(function() {
+    var card = el.querySelector('.dp-card');
+    var rect = _dp.wrap.getBoundingClientRect();
+    var ch = card.offsetHeight, cw = card.offsetWidth;
+    var gap = 6;
+    var top = rect.bottom + gap;
+    var left = rect.left + (rect.width / 2) - (cw / 2);
+    if (top + ch > window.innerHeight - 8) top = rect.top - ch - gap;
+    if (top < 8) top = 8;
+    if (left + cw > window.innerWidth - 8) left = window.innerWidth - cw - 8;
+    if (left < 8) left = 8;
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+  });
+}
+
+function dpGo(dir) { _dp.m += dir; if (_dp.m < 0) { _dp.m = 11; _dp.y--; } if (_dp.m > 11) { _dp.m = 0; _dp.y++; } drawDP(); }
+function dpToday() { var n = new Date(); dpPick(n.getFullYear(), n.getMonth(), n.getDate()); }
+function dpPick(y, m, d) {
+  var s = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  var inp = _dp.wrap.querySelector('input');
+  inp.value = s;
+  _dp.wrap.dataset.display = formatDate(s);
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+  dpDone();
+}
+function dpClearVal() {
+  var inp = _dp.wrap.querySelector('input');
+  inp.value = '';
+  _dp.wrap.dataset.display = '';
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
+  dpDone();
+}
+function dpDone() { var el = document.getElementById('dp-overlay'); if (el) el.remove(); _dp = null; }
+
+document.addEventListener('click', function(e) {
+  var w = e.target.closest('.date-wrap');
+  if (w && !document.getElementById('dp-overlay')) openDatePicker(w);
+});
+
 async function resizeImage(file, maxDim) {
   maxDim = maxDim || 1200;
   return new Promise((resolve) => {
@@ -698,7 +868,7 @@ const app = {
       </div>
       <div class="form-group">
         <label class="form-label">${t('startDate')}</label>
-        <input type="date" id="md-start" value="${todayStr()}">
+        <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(todayStr())}"><input type="date" id="md-start" value="${todayStr()}" onchange="this.parentElement.dataset.display=formatDate(this.value)"></div>
       </div>
       <div class="form-group">
         <label class="form-label">${t('notes')}</label>
@@ -737,11 +907,11 @@ const app = {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">${t('startDate')}</label>
-          <input type="date" id="md-start" value="${p.startDate}">
+          <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(p.startDate)}"><input type="date" id="md-start" value="${p.startDate}" onchange="this.parentElement.dataset.display=formatDate(this.value)"></div>
         </div>
         <div class="form-group">
           <label class="form-label">${t('endDate')}</label>
-          <input type="date" id="md-end" value="${p.endDate || ''}">
+          <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(p.endDate)}"><input type="date" id="md-end" value="${p.endDate || ''}" onchange="this.parentElement.dataset.display=formatDate(this.value)"></div>
         </div>
       </div>
       <div class="form-group">
@@ -1692,7 +1862,7 @@ function yarnStashFormHTML(item) {
     </div>
     <div class="form-group">
       <label class="form-label">${t('purchaseDate')}</label>
-      <input type="date" id="md-sdate" value="${item.purchaseDate || ''}">
+      <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(item.purchaseDate)}"><input type="date" id="md-sdate" value="${item.purchaseDate || ''}" onchange="this.parentElement.dataset.display=formatDate(this.value)"></div>
     </div>
     <div class="form-group">
       <label class="form-label">${t('notes')}</label>
@@ -1866,14 +2036,14 @@ function renderDashboard() {
           <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">${t('filterByDate')}</span>
           ${hasDateFilter ? `<button class="btn-ghost" onclick="app.clearDashDateFilter()" style="margin-left:auto;font-size:12px;padding:4px 10px;color:var(--accent-rust);"><i class="fas fa-times"></i> ${t('clearFilter')}</button>` : ''}
         </div>
-        <div style="display:flex;gap:10px;align-items:center;">
-          <div style="flex:1;">
+        <div class="form-row" style="align-items:flex-start;">
+          <div class="form-group" style="margin-bottom:8px;">
             <label class="form-label" style="margin-bottom:4px;">${t('dateFrom')}</label>
-            <input type="date" value="${state.dashDateFrom}" onchange="app.setDashDateFrom(this.value)" style="padding:8px 12px;">
+            <div class="date-wrap" style="--date-pad:8px 12px" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(state.dashDateFrom)}"><input type="date" value="${state.dashDateFrom}" onchange="this.parentElement.dataset.display=formatDate(this.value);app.setDashDateFrom(this.value)" style="padding:8px 12px;"></div>
           </div>
-          <div style="flex:1;">
+          <div class="form-group" style="margin-bottom:8px;">
             <label class="form-label" style="margin-bottom:4px;">${t('dateTo')}</label>
-            <input type="date" value="${state.dashDateTo}" onchange="app.setDashDateTo(this.value)" style="padding:8px 12px;">
+            <div class="date-wrap" style="--date-pad:8px 12px" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(state.dashDateTo)}"><input type="date" value="${state.dashDateTo}" onchange="this.parentElement.dataset.display=formatDate(this.value);app.setDashDateTo(this.value)" style="padding:8px 12px;"></div>
           </div>
         </div>
       </div>
@@ -2253,11 +2423,11 @@ function renderDetailsTab(p) {
       <div class="stitch-divider" style="margin-top:0;">${t('projectInfo')}</div>
       <div class="form-group">
         <label class="form-label">${t('startDate')}</label>
-        <input type="date" value="${p.startDate}" onchange="(function(el){const pr=getProject('${p.id}');if(pr){pr.startDate=el.value;saveProject(pr)}})(this)">
+        <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(p.startDate)}"><input type="date" value="${p.startDate}" onchange="this.parentElement.dataset.display=formatDate(this.value);(function(el){const pr=getProject('${p.id}');if(pr){pr.startDate=el.value;saveProject(pr)}})(this)"></div>
       </div>
       <div class="form-group">
         <label class="form-label">${t('endDate')}</label>
-        <input type="date" value="${p.endDate||''}" onchange="(function(el){const pr=getProject('${p.id}');if(pr){pr.endDate=el.value;saveProject(pr)}})(this)">
+        <div class="date-wrap" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(p.endDate)}"><input type="date" value="${p.endDate||''}" onchange="this.parentElement.dataset.display=formatDate(this.value);(function(el){const pr=getProject('${p.id}');if(pr){pr.endDate=el.value;saveProject(pr)}})(this)"></div>
       </div>
       <div class="form-group">
         <label class="form-label">${t('notes')}</label>
@@ -2489,10 +2659,3 @@ function renderYarnStash() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
