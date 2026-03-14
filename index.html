@@ -453,6 +453,40 @@ textarea { resize: vertical; min-height: 80px; }
   cursor: pointer; animation: fadeIn 0.2s;
 }
 .lightbox img { max-width: 95%; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+
+/* Sticky scroll sections */
+.sticky-project-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-primary);
+}
+.sticky-list-chrome {
+  position: sticky;
+  top: var(--header-h, 63px);
+  z-index: 20;
+  background: var(--bg-primary);
+  margin: -20px -16px 0;
+  padding: 20px 16px 12px;
+}
+.dash-date-row.form-row {
+  flex-direction: row !important;
+  gap: 8px !important;
+}
+.dash-date-row .form-label {
+  font-size: 10px !important;
+  margin-bottom: 2px !important;
+}
+.dash-date-row .date-wrap {
+  font-size: 13px !important;
+  min-height: 36px !important;
+  padding: 6px 10px !important;
+  padding-right: 32px !important;
+}
+.dash-date-row .date-wrap::before {
+  font-size: 12px;
+  right: 10px;
+}
 </style>
 </head>
 <body>
@@ -1950,6 +1984,14 @@ function render() {
       setTimeout(() => app.renderPdfPage(p.id, state.pdfPage), 50);
     }
   }
+
+  // Set header height CSS variable for sticky offsets
+  requestAnimationFrame(() => {
+    const header = document.getElementById('app-header');
+    if (header) {
+      document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+    }
+  });
 }
 
 function renderHeader() {
@@ -2039,6 +2081,7 @@ function renderDashboard() {
 
   return `
     <div class="anim-fade" style="padding:20px 16px;">
+      <div class="sticky-list-chrome">
       <!-- Filters -->
       <div class="card" style="padding:14px 16px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -2059,7 +2102,7 @@ function renderDashboard() {
           <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">${t('filterByDate')}</span>
           ${hasDateFilter ? `<button class="btn-ghost" onclick="app.clearDashDateFilter()" style="margin-left:auto;font-size:12px;padding:4px 10px;color:var(--accent-rust);"><i class="fas fa-times"></i> ${t('clearFilter')}</button>` : ''}
         </div>
-        <div class="form-row" style="align-items:flex-start;">
+        <div class="form-row dash-date-row" style="align-items:flex-start;">
           <div class="form-group" style="margin-bottom:8px;">
             <label class="form-label" style="margin-bottom:4px;">${t('dateFrom')}</label>
             <div class="date-wrap" style="--date-pad:8px 12px" data-placeholder="${t('datePlaceholder')}" data-display="${formatDate(state.dashDateFrom)}"><input type="date" value="${state.dashDateFrom}" onchange="this.parentElement.dataset.display=formatDate(this.value);app.setDashDateFrom(this.value)" style="padding:8px 12px;"></div>
@@ -2085,6 +2128,7 @@ function renderDashboard() {
           <div class="stat-number" style="color:var(--accent-gold);">${totalH}</div>
           <div class="stat-label">${t('totalHours')}</div>
         </div>
+      </div>
       </div>
 
       <!-- Recent Projects -->
@@ -2194,6 +2238,7 @@ function renderProjectList() {
 
   return `
     <div class="anim-fade" style="padding:20px 16px;">
+      <div class="sticky-list-chrome">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h2 style="font-family:Cormorant,serif;font-size:1.6rem;font-weight:700;">${t('projects')} <span style="font-size:1rem;color:var(--text-muted);">(${projects.length}/${totalCount})</span></h2>
       </div>
@@ -2215,6 +2260,7 @@ function renderProjectList() {
             ${f.label}
           </button>
         `).join('')}
+      </div>
       </div>
 
       ${projects.length === 0 ? `
@@ -2283,8 +2329,9 @@ function renderProjectDetail() {
 
   return `
     <div class="anim-fade">
+      <div class="sticky-project-chrome">
       <!-- Project Header -->
-      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg-primary);position:sticky;top:0;z-index:30;">
+      <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);">
         <button class="btn-ghost" onclick="app.navigate('projects')" style="padding:8px;"><i class="fas fa-arrow-left"></i></button>
         <div style="flex:1;min-width:0;">
           <div style="font-family:Cormorant,serif;font-weight:700;font-size:1.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.name)}</div>
@@ -2300,12 +2347,13 @@ function renderProjectDetail() {
       </div>
 
       <!-- Tabs -->
-      <div class="tab-bar" style="padding:0 8px;">
+      <div class="tab-bar" style="padding:0 8px;background:var(--bg-primary);">
         ${tabs.map(tab => `
           <button class="tab-item ${state.projectTab===tab.key?'active':''}" onclick="app.setProjectTab('${tab.key}')">
             <i class="fas ${tab.icon}" style="margin-right:4px;font-size:12px;"></i>${tab.label}
           </button>
         `).join('')}
+      </div>
       </div>
 
       <!-- Tab Content -->
@@ -2610,6 +2658,7 @@ function renderYarnStash() {
 
   return `
     <div class="anim-fade" style="padding:20px 16px;">
+      <div class="sticky-list-chrome">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <h2 style="font-family:Cormorant,serif;font-size:1.6rem;font-weight:700;">${t('yarnStash')}</h2>
         <button class="btn btn-primary btn-sm" onclick="app.showAddStashModal()"><i class="fas fa-plus"></i> ${t('addToStash')}</button>
@@ -2624,6 +2673,7 @@ function renderYarnStash() {
           <div class="stat-number" style="color:var(--accent-sage);">${brands.length}</div>
           <div class="stat-label">${t('brands')}</div>
         </div>
+      </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;">
